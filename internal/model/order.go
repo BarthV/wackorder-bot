@@ -37,7 +37,16 @@ func ParseStatus(s string) (Status, error) {
 			return st, nil
 		}
 	}
-	return "", fmt.Errorf("invalid status %q: must be one of ordered, ready, done, canceled", s)
+	return "", fmt.Errorf("Statut invalide : %q.\nValeurs acceptées : `ready`, `done`.\nUtilise `/order-help` pour voir le workflow complet.", s)
+}
+
+// ValidNextStatuses returns the valid non-cancel target statuses from the given state.
+func ValidNextStatuses(current Status) []Status {
+	allowed := map[Status][]Status{
+		StatusOrdered: {StatusReady, StatusDone},
+		StatusReady:   {StatusDone, StatusOrdered},
+	}
+	return allowed[current]
 }
 
 // ValidateTransition checks whether transitioning from current to next is allowed.
@@ -45,16 +54,16 @@ func ParseStatus(s string) (Status, error) {
 func ValidateTransition(current, next Status, isCreator bool) error {
 	// Terminal states: no outgoing transitions.
 	if current == StatusDone {
-		return fmt.Errorf("order is already done and cannot be changed")
+		return fmt.Errorf("Cette commande est déjà terminée et ne peut plus être modifiée.")
 	}
 	if current == StatusCanceled {
-		return fmt.Errorf("order is already canceled and cannot be changed")
+		return fmt.Errorf("Cette commande est déjà annulée et ne peut plus être modifiée.")
 	}
 
 	// Cancel requires the caller to be the creator.
 	if next == StatusCanceled {
 		if !isCreator {
-			return fmt.Errorf("only the order creator can cancel it")
+			return fmt.Errorf("Seul le créateur de la commande peut l'annuler.")
 		}
 		return nil // all non-terminal states can be canceled by the creator
 	}
@@ -62,7 +71,7 @@ func ValidateTransition(current, next Status, isCreator bool) error {
 	// Valid forward transitions.
 	allowed := map[Status][]Status{
 		StatusOrdered: {StatusReady, StatusDone},
-		StatusReady:   {StatusDone},
+		StatusReady:   {StatusDone, StatusOrdered},
 	}
 
 	for _, a := range allowed[current] {
@@ -71,7 +80,7 @@ func ValidateTransition(current, next Status, isCreator bool) error {
 		}
 	}
 
-	return fmt.Errorf("cannot transition from %q to %q", current, next)
+	return fmt.Errorf("Impossible de passer du statut %q à %q.", current, next)
 }
 
 // Order is the core domain entity.
@@ -83,6 +92,7 @@ type Order struct {
 	MinQuality  string
 	Quantity    int
 	Status      Status
+	UpdatedBy   string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }

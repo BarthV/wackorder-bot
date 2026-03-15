@@ -72,9 +72,14 @@ CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
 		name:    "default_min_quality_to_zero",
 		sql:     `UPDATE orders SET min_quality = '0' WHERE min_quality = '';`,
 	},
+	{
+		version: 4,
+		name:    "add_updated_by_column",
+		sql:     `ALTER TABLE orders ADD COLUMN updated_by TEXT NOT NULL DEFAULT '';`,
+	},
 	// Add future migrations here, e.g.:
 	// {
-	//   version: 4,
+	//   version: 5,
 	//   name:    "add_components_table",
 	//   sql:     `CREATE TABLE components (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE);`,
 	// },

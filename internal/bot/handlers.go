@@ -2,6 +2,7 @@ package bot
 
 import (
 	"log/slog"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/barthv/wackorder-bot/internal/store"
@@ -15,24 +16,36 @@ type handler struct {
 // onInteraction is the single entry-point registered with discordgo.
 func (h *handler) onInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	switch i.Type {
+	case discordgo.InteractionApplicationCommandAutocomplete:
+		switch i.ApplicationCommandData().Name {
+		case "order":
+			h.handleOrderAutocomplete(s, i)
+		case "order-update":
+			h.handleOrderUpdateAutocomplete(s, i)
+		}
+
 	case discordgo.InteractionApplicationCommand:
 		switch i.ApplicationCommandData().Name {
 		case "order":
 			h.handleOrder(s, i)
-		case "order-view":
+		case "order-list":
 			h.handleOrders(s, i)
 		case "order-update":
 			h.handleOrderUpdate(s, i)
 		case "order-cancel":
 			h.handleOrderCancel(s, i)
+		case "order-help":
+			h.handleOrderHelp(s, i)
+		}
+
+	case discordgo.InteractionMessageComponent:
+		if strings.HasPrefix(i.MessageComponentData().CustomID, statusSelectCustomID) {
+			h.handleStatusSelect(s, i)
 		}
 
 	case discordgo.InteractionModalSubmit:
-		switch customID(i) {
-		case "order_modal":
+		if customID(i) == "order_modal" {
 			h.handleOrderModalSubmit(s, i)
-		case "update_modal":
-			h.handleUpdateModalSubmit(s, i)
 		}
 	}
 }
@@ -87,7 +100,7 @@ func respondEmbeds(s *discordgo.Session, i *discordgo.InteractionCreate, embeds 
 func requireCallerID(s *discordgo.Session, i *discordgo.InteractionCreate) (string, bool) {
 	id := callerID(i)
 	if id == "" {
-		respond(s, i, errEmbed("Could not determine your identity. Please use this command inside a server."))
+		respond(s, i, errEmbed("Impossible de déterminer ton identité. Utilise cette commande dans un serveur."))
 		return "", false
 	}
 	return id, true

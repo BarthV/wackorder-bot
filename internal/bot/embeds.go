@@ -35,13 +35,13 @@ func statusColor(s model.Status) int {
 func statusLabel(s model.Status) string {
 	switch s {
 	case model.StatusOrdered:
-		return "📋 Ordered"
+		return "📋 Commandé"
 	case model.StatusReady:
-		return "📦 Ready"
+		return "📦 Prêt"
 	case model.StatusDone:
-		return "✅ Done"
+		return "✅ Terminé"
 	case model.StatusCanceled:
-		return "❌ Canceled"
+		return "❌ Annulé"
 	}
 	return string(s)
 }
@@ -49,20 +49,26 @@ func statusLabel(s model.Status) string {
 // orderEmbed builds a Discord embed for a single order.
 func orderEmbed(o *model.Order) *discordgo.MessageEmbed {
 	fields := []*discordgo.MessageEmbedField{
-		{Name: "Component", Value: o.Component, Inline: true},
-		{Name: "Min Quality", Value: qualityOrAny(o.MinQuality), Inline: true},
-		{Name: "Quantity", Value: fmt.Sprintf("%d cSCU", o.Quantity), Inline: true},
-		{Name: "Status", Value: statusLabel(o.Status), Inline: true},
-		{Name: "Ordered by", Value: fmt.Sprintf("%s (<@%s>)", o.CreatorName, o.CreatorID), Inline: true},
-		{Name: "Created", Value: formatTime(o.CreatedAt), Inline: true},
+		{Name: "Ressource", Value: o.Component, Inline: true},
+		{Name: "Quantité", Value: fmt.Sprintf("%d cSCU", o.Quantity), Inline: true},
+		{Name: "Statut", Value: statusLabel(o.Status), Inline: true},
+		{Name: "Commandé par", Value: fmt.Sprintf("%s (<@%s>)", o.CreatorName, o.CreatorID), Inline: true},
+		{Name: "Créé le", Value: formatTime(o.CreatedAt), Inline: true},
+	}
+
+	if o.MinQuality != "0" && o.MinQuality != "" {
+		fields = append([]*discordgo.MessageEmbedField{
+			fields[0],
+			{Name: "Qualité min.", Value: o.MinQuality, Inline: true},
+		}, fields[1:]...)
 	}
 
 	return &discordgo.MessageEmbed{
-		Title:  fmt.Sprintf("Order #%d", o.ID),
+		Title:  fmt.Sprintf("Commande #%d", o.ID),
 		Color:  statusColor(o.Status),
 		Fields: fields,
 		Footer: &discordgo.MessageEmbedFooter{
-			Text: fmt.Sprintf("Last updated: %s", formatTime(o.UpdatedAt)),
+			Text: fmt.Sprintf("Mis à jour : %s", formatTime(o.UpdatedAt)),
 		},
 	}
 }
@@ -74,7 +80,7 @@ func orderListEmbeds(orders []model.Order, title string) []*discordgo.MessageEmb
 		return []*discordgo.MessageEmbed{
 			{
 				Title:       title,
-				Description: "_No orders found._",
+				Description: "_Aucune commande trouvée._",
 				Color:       colorDone,
 			},
 		}
@@ -92,16 +98,20 @@ func orderListEmbeds(orders []model.Order, title string) []*discordgo.MessageEmb
 
 		var sb strings.Builder
 		for _, o := range chunk {
-			line := fmt.Sprintf("`#%d` **%s** — %s | %d cSCU - Q%s | <@%s> (%s)\n",
+			quality := ""
+			if o.MinQuality != "0" && o.MinQuality != "" {
+				quality = fmt.Sprintf(" - Q%s", o.MinQuality)
+			}
+			line := fmt.Sprintf("`#%d` **%s** — %s | %d cSCU%s | <@%s> (%s)\n",
 				o.ID, o.Component, statusLabel(o.Status),
-				o.Quantity, qualityOrAny(o.MinQuality),
+				o.Quantity, quality,
 				o.CreatorID, formatDate(o.CreatedAt))
 			sb.WriteString(line)
 		}
 
 		pageTitle := title
 		if len(embeds) > 0 {
-			pageTitle = fmt.Sprintf("%s (cont.)", title)
+			pageTitle = fmt.Sprintf("%s (suite)", title)
 		}
 
 		embeds = append(embeds, &discordgo.MessageEmbed{
@@ -109,7 +119,7 @@ func orderListEmbeds(orders []model.Order, title string) []*discordgo.MessageEmb
 			Description: sb.String(),
 			Color:       colorOrdered,
 			Footer: &discordgo.MessageEmbedFooter{
-				Text: fmt.Sprintf("%d order(s) total", len(orders)),
+				Text: fmt.Sprintf("%d commande(s)", len(orders)),
 			},
 		})
 	}
@@ -141,13 +151,6 @@ func okEmbed(msg string) *discordgo.InteractionResponseData {
 			},
 		},
 	}
-}
-
-func qualityOrAny(q string) string {
-	if q == "" {
-		return "any"
-	}
-	return q
 }
 
 func formatTime(t time.Time) string {

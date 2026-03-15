@@ -94,8 +94,8 @@ func TestListPending(t *testing.T) {
 	s.Create(context.Background(), "u3", "C", "Part3", "", 3)
 
 	// Mark one as done, one as ready.
-	s.UpdateStatus(context.Background(), id1, model.StatusDone)
-	s.UpdateStatus(context.Background(), id2, model.StatusReady)
+	s.UpdateStatus(context.Background(), id1, model.StatusDone, "tester")
+	s.UpdateStatus(context.Background(), id2, model.StatusReady, "tester")
 
 	pending, err := s.ListPending(context.Background())
 	if err != nil {
@@ -164,7 +164,7 @@ func TestUpdateStatus_Done(t *testing.T) {
 	s := newTestStore(t)
 	id := createOrder(t, s)
 
-	if err := s.UpdateStatus(context.Background(), id, model.StatusDone); err != nil {
+	if err := s.UpdateStatus(context.Background(), id, model.StatusDone, "tester"); err != nil {
 		t.Fatalf("UpdateStatus done: %v", err)
 	}
 	o, _ := s.GetByID(context.Background(), id)
@@ -202,9 +202,9 @@ func TestValidateTransition_CanceledIsTerminal(t *testing.T) {
 }
 
 func TestValidateTransition_InvalidForward(t *testing.T) {
-	// ready cannot go back to ordered
-	err := model.ValidateTransition(model.StatusReady, model.StatusOrdered, false)
+	// done is terminal — cannot transition to any other state
+	err := model.ValidateTransition(model.StatusDone, model.StatusOrdered, false)
 	if err == nil {
-		t.Error("ready → ordered should be invalid")
+		t.Error("done → ordered should be invalid")
 	}
 }

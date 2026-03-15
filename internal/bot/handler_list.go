@@ -10,47 +10,48 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// handleOrders processes the /order-view slash command.
+// handleOrders processes the /order-list slash command.
 func (h *handler) handleOrders(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	opts := optionMap(i.ApplicationCommandData().Options)
 
-	// /order-view component:<name> — search across all users, ignores view/since
+	// /order-list component:<name> — search across all users, ignores view/since
 	if compOpt, ok := opts["component"]; ok {
 		name := strings.TrimSpace(compOpt.StringValue())
 		if name == "" {
-			respond(s, i, errEmbed("Component name cannot be empty."))
+			respond(s, i, errEmbed("Le nom de la ressource ne peut pas être vide."))
 			return
 		}
 		orders, err := h.store.SearchByComponent(context.Background(), name)
 		if err != nil {
 			slog.Error("SearchByComponent failed", "component", name, "err", err)
-			respond(s, i, errEmbed("Failed to search orders. Please try again later."))
+			respond(s, i, errEmbed("Impossible de rechercher les commandes. Réessaie plus tard."))
 			return
 		}
-		respondEmbeds(s, i, orderListEmbeds(orders, fmt.Sprintf("Orders matching \"%s\"", name)), discordgo.MessageFlagsEphemeral)
+		respondEmbeds(s, i, orderListEmbeds(orders, fmt.Sprintf("Commandes correspondant à \"%s\"", name)), discordgo.MessageFlagsEphemeral)
 		return
 	}
 
-	// /order-view since:<date> — filter by creation date, all users.
+	// /order-list since:<date> — filter by creation date, all users.
 	// Dates are interpreted as midnight UTC.
 	if sinceOpt, ok := opts["since"]; ok {
 		raw := strings.TrimSpace(sinceOpt.StringValue())
 		since, err := parseDate(raw)
 		if err != nil {
-			respond(s, i, errEmbed("Invalid date format. Use YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSZ."))
+			respond(s, i, errEmbed("Format de date invalide. Utilise YYYY-MM-DD ou YYYY-MM-DDTHH:MM:SSZ."))
 			return
 		}
 		orders, err := h.store.ListSince(context.Background(), since)
 		if err != nil {
 			slog.Error("ListSince failed", "since", raw, "err", err)
-			respond(s, i, errEmbed("Failed to list orders. Please try again later."))
+			respond(s, i, errEmbed("Impossible de lister les commandes. Réessaie plus tard."))
 			return
 		}
-		respondEmbeds(s, i, orderListEmbeds(orders, "Orders since "+raw), discordgo.MessageFlagsEphemeral)
+		respondEmbeds(s, i, orderListEmbeds(orders, "Commandes depuis le "+raw), discordgo.MessageFlagsEphemeral)
 		return
 	}
 
-	// /order-view [view:<self|pending|all>]
+	// /order-list [view:<self|pending|all>]
+	// Default value is "pending"
 	view := "pending"
 	if viewOpt, ok := opts["view"]; ok {
 		view = viewOpt.StringValue()
@@ -61,21 +62,21 @@ func (h *handler) handleOrders(s *discordgo.Session, i *discordgo.InteractionCre
 		orders, err := h.store.ListPending(context.Background())
 		if err != nil {
 			slog.Error("ListPending failed", "err", err)
-			respond(s, i, errEmbed("Failed to list orders. Please try again later."))
+			respond(s, i, errEmbed("Impossible de lister les commandes. Réessaie plus tard."))
 			return
 		}
-		respondEmbeds(s, i, orderListEmbeds(orders, "Pending orders"), discordgo.MessageFlagsEphemeral)
+		respondEmbeds(s, i, orderListEmbeds(orders, "Commandes en attente"), discordgo.MessageFlagsEphemeral)
 
 	case "all":
 		orders, err := h.store.ListAll(context.Background())
 		if err != nil {
 			slog.Error("ListAll failed", "err", err)
-			respond(s, i, errEmbed("Failed to list orders. Please try again later."))
+			respond(s, i, errEmbed("Impossible de lister les commandes. Réessaie plus tard."))
 			return
 		}
-		respondEmbeds(s, i, orderListEmbeds(orders, "All orders"), discordgo.MessageFlagsEphemeral)
+		respondEmbeds(s, i, orderListEmbeds(orders, "Toutes les commandes"), discordgo.MessageFlagsEphemeral)
 
-	default: // "self"
+	default: // "pending"
 		caller, ok := requireCallerID(s, i)
 		if !ok {
 			return
@@ -83,10 +84,10 @@ func (h *handler) handleOrders(s *discordgo.Session, i *discordgo.InteractionCre
 		orders, err := h.store.ListByCreator(context.Background(), caller)
 		if err != nil {
 			slog.Error("ListByCreator failed", "caller", caller, "err", err)
-			respond(s, i, errEmbed("Failed to list orders. Please try again later."))
+			respond(s, i, errEmbed("Impossible de lister les commandes. Réessaie plus tard."))
 			return
 		}
-		respondEmbeds(s, i, orderListEmbeds(orders, "Your orders"), discordgo.MessageFlagsEphemeral)
+		respondEmbeds(s, i, orderListEmbeds(orders, "Mes commandes"), discordgo.MessageFlagsEphemeral)
 	}
 }
 

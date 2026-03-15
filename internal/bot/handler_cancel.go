@@ -19,14 +19,14 @@ func (h *handler) handleOrderCancel(s *discordgo.Session, i *discordgo.Interacti
 	opts := optionMap(i.ApplicationCommandData().Options)
 	idOpt, ok := opts["id"]
 	if !ok {
-		respond(s, i, errEmbed("Order ID is required."))
+		respond(s, i, errEmbed("L'identifiant de la commande est requis."))
 		return
 	}
 	orderID := idOpt.IntValue()
 
 	order, err := h.store.GetByID(context.Background(), orderID)
 	if err != nil {
-		respond(s, i, errEmbed(fmt.Sprintf("Order #%d not found.", orderID)))
+		respond(s, i, errEmbed(fmt.Sprintf("Commande #%d introuvable.", orderID)))
 		return
 	}
 
@@ -36,12 +36,12 @@ func (h *handler) handleOrderCancel(s *discordgo.Session, i *discordgo.Interacti
 		return
 	}
 
-	if err := h.store.UpdateStatus(context.Background(), orderID, model.StatusCanceled); err != nil {
+	if err := h.store.UpdateStatus(context.Background(), orderID, model.StatusCanceled, caller); err != nil {
 		slog.Error("failed to cancel order", "order_id", orderID, "by", caller, "err", err)
-		respond(s, i, errEmbed("Failed to cancel the order. Please try again later."))
+		respond(s, i, errEmbed("Impossible d'annuler la commande. Réessaie plus tard."))
 		return
 	}
 
 	slog.Info("order canceled", "order_id", orderID, "by", caller)
-	respond(s, i, okEmbed(fmt.Sprintf("Order #%d has been canceled.", orderID)))
+	respond(s, i, okEmbed(fmt.Sprintf("Commande #%d annulée.", orderID)))
 }

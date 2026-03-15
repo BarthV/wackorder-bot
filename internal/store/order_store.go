@@ -21,7 +21,8 @@ type Repository interface {
 	ListAll(ctx context.Context) ([]model.Order, error)
 	SearchByComponent(ctx context.Context, name string) ([]model.Order, error)
 	ListSince(ctx context.Context, since time.Time) ([]model.Order, error)
-	UpdateStatus(ctx context.Context, id int64, newStatus model.Status) error
+	UpdateStatus(ctx context.Context, id int64, newStatus model.Status, updatedBy string) error
+	ListReadyByUpdater(ctx context.Context, updatedBy string) ([]model.Order, error)
 }
 
 // OrderStore is the SQLite implementation of Repository.
@@ -58,7 +59,7 @@ func (s *OrderStore) Create(ctx context.Context, creatorID, creatorName, compone
 func (s *OrderStore) GetByID(ctx context.Context, id int64) (*model.Order, error) {
 	row := s.db.QueryRowContext(ctx,
 		`SELECT id, creator_id, creator_name, component, min_quality, quantity, status,
-		        created_at, updated_at
+		        updated_by, created_at, updated_at
 		 FROM orders WHERE id = ?`, id)
 	return scanOrder(row)
 }
@@ -67,7 +68,7 @@ func (s *OrderStore) GetByID(ctx context.Context, id int64) (*model.Order, error
 func (s *OrderStore) ListByCreator(ctx context.Context, creatorID string) ([]model.Order, error) {
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT id, creator_id, creator_name, component, min_quality, quantity, status,
-		        created_at, updated_at
+		        updated_by, created_at, updated_at
 		 FROM orders WHERE creator_id = ? ORDER BY created_at DESC`, creatorID)
 	if err != nil {
 		return nil, fmt.Errorf("list by creator: %w", err)
@@ -79,7 +80,7 @@ func (s *OrderStore) ListByCreator(ctx context.Context, creatorID string) ([]mod
 func (s *OrderStore) ListPending(ctx context.Context) ([]model.Order, error) {
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT id, creator_id, creator_name, component, min_quality, quantity, status,
-		        created_at, updated_at
+		        updated_by, created_at, updated_at
 		 FROM orders WHERE status IN ('ordered','ready') ORDER BY created_at ASC`)
 	if err != nil {
 		return nil, fmt.Errorf("list pending: %w", err)
@@ -91,7 +92,7 @@ func (s *OrderStore) ListPending(ctx context.Context) ([]model.Order, error) {
 func (s *OrderStore) ListAll(ctx context.Context) ([]model.Order, error) {
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT id, creator_id, creator_name, component, min_quality, quantity, status,
-		        created_at, updated_at
+		        updated_by, created_at, updated_at
 		 FROM orders ORDER BY created_at DESC`)
 	if err != nil {
 		return nil, fmt.Errorf("list all: %w", err)
@@ -111,7 +112,7 @@ func escapeLike(s string) string {
 func (s *OrderStore) SearchByComponent(ctx context.Context, name string) ([]model.Order, error) {
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT id, creator_id, creator_name, component, min_quality, quantity, status,
-		        created_at, updated_at
+		        updated_by, created_at, updated_at
 		 FROM orders WHERE component LIKE ? ESCAPE '\' COLLATE NOCASE ORDER BY created_at DESC`,
 		"%"+escapeLike(name)+"%")
 	if err != nil {
@@ -124,7 +125,7 @@ func (s *OrderStore) SearchByComponent(ctx context.Context, name string) ([]mode
 func (s *OrderStore) ListSince(ctx context.Context, since time.Time) ([]model.Order, error) {
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT id, creator_id, creator_name, component, min_quality, quantity, status,
-		        created_at, updated_at
+		        updated_by, created_at, updated_at
 		 FROM orders WHERE created_at >= ? ORDER BY created_at ASC`,
 		since.UTC().Format(time.RFC3339))
 	if err != nil {
@@ -133,12 +134,12 @@ func (s *OrderStore) ListSince(ctx context.Context, since time.Time) ([]model.Or
 	return scanOrders(rows)
 }
 
-// UpdateStatus changes the status of an order.
-func (s *OrderStore) UpdateStatus(ctx context.Context, id int64, newStatus model.Status) error {
+// UpdateStatus changes the status of an order and records who made the change.
+func (s *OrderStore) UpdateStatus(ctx context.Context, id int64, newStatus model.Status, updatedBy string) error {
 	now := time.Now().UTC().Format(time.RFC3339)
 	res, err := s.db.ExecContext(ctx,
-		`UPDATE orders SET status = ?, updated_at = ? WHERE id = ?`,
-		string(newStatus), now, id,
+		`UPDATE orders SET status = ?, updated_by = ?, updated_at = ? WHERE id = ?`,
+		string(newStatus), updatedBy, now, id,
 	)
 	if err != nil {
 		return fmt.Errorf("update status: %w", err)
@@ -153,6 +154,18 @@ func (s *OrderStore) UpdateStatus(ctx context.Context, id int64, newStatus model
 	return nil
 }
 
+// ListReadyByUpdater returns all orders with status "ready" last updated by the given Discord user ID.
+func (s *OrderStore) ListReadyByUpdater(ctx context.Context, updatedBy string) ([]model.Order, error) {
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id, creator_id, creator_name, component, min_quality, quantity, status,
+		        updated_by, created_at, updated_at
+		 FROM orders WHERE status = 'ready' AND updated_by = ? ORDER BY created_at ASC`, updatedBy)
+	if err != nil {
+		return nil, fmt.Errorf("list ready by updater: %w", err)
+	}
+	return scanOrders(rows)
+}
+
 // --- helpers ---
 
 type scanner interface {
@@ -165,7 +178,7 @@ func scanOrder(row scanner) (*model.Order, error) {
 
 	err := row.Scan(
 		&o.ID, &o.CreatorID, &o.CreatorName, &o.Component, &o.MinQuality,
-		&o.Quantity, &o.Status, &createdAt, &updatedAt,
+		&o.Quantity, &o.Status, &o.UpdatedBy, &createdAt, &updatedAt,
 	)
 	if err != nil {
 		return nil, err

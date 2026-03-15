@@ -10,10 +10,11 @@ func commands() []*discordgo.ApplicationCommand {
 			Description: "Passer une commande de ressource (via popup si les options sont non déclarées)",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "component",
-					Description: "Nom de la ressource désirée (Taranite, Hadanite, Riccite, ...)",
-					Required:    false,
+					Type:         discordgo.ApplicationCommandOptionString,
+					Name:         "component",
+					Description:  "Nom de la ressource désirée (Taranite, Hadanite, Riccite, ...)",
+					Required:     false,
+					Autocomplete: true,
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
@@ -31,65 +32,76 @@ func commands() []*discordgo.ApplicationCommand {
 			},
 		},
 		{
-			Name:        "order-view",
-			Description: "Lister les commandes enregistrées avec possibilité de filtrage",
+			Name:        "order-list",
+			Description: "Lister les commandes disponibles avec possibilité de filtrage",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "view",
-					Description: "Which orders to show",
+					Description: "Filtrer les commandes affichées",
 					Required:    false,
 					Choices: []*discordgo.ApplicationCommandOptionChoice{
-						{Name: "self — your own orders (all statuses)", Value: "self"},
-						{Name: "pending — unfinished orders (ordered / ready)", Value: "pending"},
-						{Name: "all — every order", Value: "all"},
+						{Name: "self — mes commandes (tous statuts)", Value: "self"},
+						{Name: "pending — commandes en attente (commandé / prêt)", Value: "pending"},
+						{Name: "all — toutes les commandes", Value: "all"},
 					},
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "component",
-					Description: "Filter by component name (case-insensitive, all users)",
+					Description: "Filtrer par nom de ressource (insensible à la casse, tous utilisateurs)",
 					Required:    false,
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "since",
-					Description: "Filter by creation date, e.g. 2026-01-15 (all users)",
+					Description: "Filtrer par date de création, ex. 2026-01-15 (tous utilisateurs)",
 					Required:    false,
 				},
 			},
 		},
 		{
 			Name:        "order-update",
-			Description: "Update an order's status. Omit options to use the modal form.",
+			Description: "Mettre à jour le statut d'une commande.",
 			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "all-my-ready",
+					Description: "Mettre à jour toutes mes commandes 'prêtes' vers ce statut (priorité sur les autres options)",
+					Required:    false,
+					Choices: []*discordgo.ApplicationCommandOptionChoice{
+						{Name: "ordered — remettre en attente", Value: "ordered"},
+						{Name: "done — marquer comme terminées", Value: "done"},
+					},
+				},
 				{
 					Type:        discordgo.ApplicationCommandOptionInteger,
 					Name:        "id",
-					Description: "Order ID",
+					Description: "Identifiant de la commande",
 					Required:    false,
 					MinValue:    floatPtr(1),
 				},
 				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "status",
-					Description: "New status",
-					Required:    false,
-					Choices: []*discordgo.ApplicationCommandOptionChoice{
-						{Name: "ready — item produced/gathered", Value: "ready"},
-						{Name: "done — order complete", Value: "done"},
-					},
+					Type:         discordgo.ApplicationCommandOptionString,
+					Name:         "status",
+					Description:  "Nouveau statut (optionnel — une liste s'affiche sinon)",
+					Required:     false,
+					Autocomplete: true,
 				},
 			},
 		},
 		{
+			Name:        "order-help",
+			Description: "Afficher l'aide et la liste des ressources disponibles.",
+		},
+		{
 			Name:        "order-cancel",
-			Description: "Cancel one of your orders.",
+			Description: "Annule une de vos commandes.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionInteger,
 					Name:        "id",
-					Description: "Order ID to cancel",
+					Description: "Identifiant de la commande à annuler",
 					Required:    true,
 					MinValue:    floatPtr(1),
 				},

@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	maxComponentLen = 200
-	maxQualityLen   = 50
+	maxComponentLen = 64
+	maxQualityLen   = 4
 )
 
 // handleOrder processes the /order slash command.
@@ -45,19 +45,19 @@ func (h *handler) handleOrder(s *discordgo.Session, i *discordgo.InteractionCrea
 
 		qty := int(quantityOpt.IntValue())
 		if qty <= 0 {
-			respond(s, i, errEmbed("Quantity must be greater than 0."))
+			respond(s, i, errEmbed("La quantité doit être supérieure à 0."))
 			return
 		}
 
 		id, err := h.store.Create(context.Background(), caller, callerName(i), comp, qual, qty)
 		if err != nil {
 			slog.Error("failed to create order", "by", caller, "err", err)
-			respond(s, i, errEmbed("Failed to create order. Please try again later."))
+			respond(s, i, errEmbed("Impossible de créer la commande. Réessaie plus tard."))
 			return
 		}
 		order, err := h.store.GetByID(context.Background(), id)
 		if err != nil {
-			respond(s, i, okEmbed(fmt.Sprintf("Order #%d created.", id)))
+			respond(s, i, okEmbed(fmt.Sprintf("Commande #%d créée.", id)))
 			return
 		}
 		slog.Info("order created", "order_id", id, "by", caller)
@@ -81,11 +81,11 @@ func (h *handler) handleOrder(s *discordgo.Session, i *discordgo.InteractionCrea
 		Type: discordgo.InteractionResponseModal,
 		Data: &discordgo.InteractionResponseData{
 			CustomID: "order_modal",
-			Title:    "G.A.L.E.R.E - Passer une commande",
+			Title:    "G.A.L.E.R.E - Nouvelle commande",
 			Components: []discordgo.MessageComponent{
-				textRow("component", "Ressource", "e.g. Tarnanite, Hadanite, Riccite ...", compValue, true),
-				textRow("quality", "Qualité", "e.g. 750", qualValue, false),
-				textRow("quantity", "Quantité (cSCU | Units)", "e.g. 150", qtyValue, true),
+				textRow("component", "Ressource", "ex. Taranite, Hadanite, Riccite ...", compValue, true),
+				textRow("quality", "Qualité", "ex. 750", qualValue, false),
+				textRow("quantity", "Quantité (cSCU | Unités)", "ex. 150", qtyValue, true),
 			},
 		},
 	}); err != nil {
@@ -117,20 +117,20 @@ func (h *handler) handleOrderModalSubmit(s *discordgo.Session, i *discordgo.Inte
 
 	qty, err := strconv.Atoi(qtyStr)
 	if err != nil || qty <= 0 {
-		respond(s, i, errEmbed("Quantity must be a positive integer."))
+		respond(s, i, errEmbed("La quantité doit être un entier positif."))
 		return
 	}
 
 	id, err := h.store.Create(context.Background(), caller, callerName(i), component, quality, qty)
 	if err != nil {
 		slog.Error("failed to create order", "by", caller, "err", err)
-		respond(s, i, errEmbed("Failed to create order. Please try again later."))
+		respond(s, i, errEmbed("Impossible de créer la commande. Réessaie plus tard."))
 		return
 	}
 
 	order, err := h.store.GetByID(context.Background(), id)
 	if err != nil {
-		respond(s, i, okEmbed(fmt.Sprintf("Order #%d created.", id)))
+		respond(s, i, okEmbed(fmt.Sprintf("Commande #%d créée.", id)))
 		return
 	}
 	slog.Info("order created", "order_id", id, "by", caller)
@@ -140,13 +140,13 @@ func (h *handler) handleOrderModalSubmit(s *discordgo.Session, i *discordgo.Inte
 // validateOrderFields checks component and quality field constraints.
 func validateOrderFields(component, quality string) error {
 	if component == "" {
-		return fmt.Errorf("Component name cannot be empty.")
+		return fmt.Errorf("Le nom de la ressource ne peut pas être vide.")
 	}
-	if len(component) > maxComponentLen {
-		return fmt.Errorf("Component name must be %d characters or fewer.", maxComponentLen)
+	if !isValidResource(component) {
+		return fmt.Errorf("Ressource inconnue : %q.\nUtilise `/order-help` pour voir la liste des ressources disponibles.", component)
 	}
 	if len(quality) > maxQualityLen {
-		return fmt.Errorf("Quality must be %d characters or fewer.", maxQualityLen)
+		return fmt.Errorf("La qualité ne peut pas dépasser %d caractères.", maxQualityLen)
 	}
 	return nil
 }

@@ -17,12 +17,12 @@ ordered ──→ ready ──→ done
 |---------|-------------|
 | `/order` | Open modal to place an order |
 | `/order component:x quality:y quantity:n` | Place an order directly |
-| `/order-view` | Your own orders (all statuses) |
-| `/order-view view:self` | Your own orders (all statuses) |
-| `/order-view view:pending` | All unfinished orders (ordered / ready) |
-| `/order-view view:all` | Every order |
-| `/order-view component:<name>` | Search by component name (case-insensitive) |
-| `/order-view since:<date>` | Orders created since a date (YYYY-MM-DD or RFC3339) |
+| `/order-list` | Your own orders (all statuses) |
+| `/order-list view:self` | Your own orders (all statuses) |
+| `/order-list view:pending` | All unfinished orders (ordered / ready) |
+| `/order-list view:all` | Every order |
+| `/order-list component:<name>` | Search by component name (case-insensitive) |
+| `/order-list since:<date>` | Orders created since a date (YYYY-MM-DD or RFC3339) |
 | `/order-update` | Open modal to update an order's status |
 | `/order-update id:<n> status:<s>` | Update an order directly |
 | `/order-cancel id:<n>` | Cancel one of your own orders |
