@@ -8,7 +8,7 @@ import (
 // Config holds all runtime configuration loaded from environment variables.
 type Config struct {
 	DiscordToken string
-	GuildID      string
+	CorpID       string
 	DBPath       string
 	LogLevel     string
 	LogFormat    string
@@ -21,8 +21,8 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("DISCORD_TOKEN environment variable is required")
 	}
 
-	guildID := os.Getenv("CORP_ID")
-	if guildID == "" {
+	corpID := os.Getenv("CORP_ID")
+	if corpID == "" {
 		return nil, fmt.Errorf("CORP_ID environment variable is required")
 	}
 
@@ -43,7 +43,7 @@ func Load() (*Config, error) {
 
 	return &Config{
 		DiscordToken: token,
-		GuildID:      guildID,
+		CorpID:       corpID,
 		DBPath:       dbPath,
 		LogLevel:     logLevel,
 		LogFormat:    logFormat,

@@ -11,19 +11,19 @@ import (
 // Bot manages the Discord session and command lifecycle.
 type Bot struct {
 	session         *discordgo.Session
-	guildID         string
+	corpID         string
 	store           store.Repository
 	registeredCmds  []*discordgo.ApplicationCommand
 }
 
 // New creates a Bot but does not open the connection yet.
-func New(token, guildID string, repo store.Repository) (*Bot, error) {
+func New(token, corpID string, repo store.Repository) (*Bot, error) {
 	s, err := discordgo.New("Bot " + token)
 	if err != nil {
 		return nil, fmt.Errorf("create discord session: %w", err)
 	}
 	s.Identify.Intents = discordgo.IntentsNone
-	return &Bot{session: s, guildID: guildID, store: repo}, nil
+	return &Bot{session: s, corpID: corpID, store: repo}, nil
 }
 
 // Start opens the Discord connection and registers slash commands.
@@ -36,7 +36,7 @@ func (b *Bot) Start() error {
 	}
 
 	for _, cmd := range commands() {
-		registered, err := b.session.ApplicationCommandCreate(b.session.State.User.ID, b.guildID, cmd)
+		registered, err := b.session.ApplicationCommandCreate(b.session.State.User.ID, b.corpID, cmd)
 		if err != nil {
 			return fmt.Errorf("register command %q: %w", cmd.Name, err)
 		}
@@ -44,14 +44,14 @@ func (b *Bot) Start() error {
 		slog.Info("command registered", "name", cmd.Name)
 	}
 
-	slog.Info("wackorder bot is running", "guild_id", b.guildID)
+	slog.Info("wackorder bot is running", "corp_id", b.corpID)
 	return nil
 }
 
 // Stop deregisters commands and closes the Discord session.
 func (b *Bot) Stop() error {
 	for _, cmd := range b.registeredCmds {
-		if err := b.session.ApplicationCommandDelete(b.session.State.User.ID, b.guildID, cmd.ID); err != nil {
+		if err := b.session.ApplicationCommandDelete(b.session.State.User.ID, b.corpID, cmd.ID); err != nil {
 			slog.Warn("failed to delete command", "name", cmd.Name, "err", err)
 		}
 	}

@@ -16,8 +16,9 @@ const (
 )
 
 // handleOrder processes the /order slash command.
-// If all three options are present, creates the order directly.
-// Otherwise, opens a modal to collect missing fields.
+// If component and quantity are both provided, creates the order directly.
+// If component is provided but quantity is missing, opens a 2-field modal (quality + quantity).
+// If component is missing, opens the full 3-field modal (component + quality + quantity).
 func (h *handler) handleOrder(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	caller, ok := requireCallerID(s, i)
 	if !ok {
@@ -65,35 +66,24 @@ func (h *handler) handleOrder(s *discordgo.Session, i *discordgo.InteractionCrea
 		return
 	}
 
-	// Missing at least one field — open modal with pre-filled values.
-	compValue, qualValue, qtyValue := "", "0", ""
-	if hasComp {
-		compValue = component.StringValue()
-	}
+	qualValue := "0"
 	if hasQual {
 		qualValue = quality.StringValue()
 	}
+	qtyValue := ""
 	if hasQty {
 		qtyValue = strconv.FormatInt(quantityOpt.IntValue(), 10)
 	}
 
-	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseModal,
-		Data: &discordgo.InteractionResponseData{
-			CustomID: "order_modal",
-			Title:    "G.A.L.E.R.E - Nouvelle commande",
-			Components: []discordgo.MessageComponent{
-				textRow("component", "Ressource", "ex. Taranite, Hadanite, Riccite ...", compValue, true),
-				textRow("quality", "Qualité", "ex. 750", qualValue, false),
-				textRow("quantity", "Quantité (cSCU | Unités)", "ex. 150", qtyValue, true),
-			},
-		},
-	}); err != nil {
-		slog.Debug("failed to open order modal", "err", err)
+	compValue := ""
+	if hasComp {
+		compValue = strings.TrimSpace(component.StringValue())
 	}
+	openOrderModal(s, i, compValue, qualValue, qtyValue)
 }
 
 // handleOrderModalSubmit handles the modal submission for /order.
+// Component, quality, and quantity are all read from the modal fields.
 func (h *handler) handleOrderModalSubmit(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	caller, ok := requireCallerID(s, i)
 	if !ok {
@@ -104,6 +94,7 @@ func (h *handler) handleOrderModalSubmit(s *discordgo.Session, i *discordgo.Inte
 	fields := modalFields(data.Components)
 
 	component := strings.TrimSpace(fields["component"])
+
 	quality := strings.TrimSpace(fields["quality"])
 	if quality == "" {
 		quality = "0"
@@ -149,6 +140,25 @@ func validateOrderFields(component, quality string) error {
 		return fmt.Errorf("La qualité ne peut pas dépasser %d caractères.", maxQualityLen)
 	}
 	return nil
+}
+
+// openOrderModal opens the order creation modal with component encoded in the CustomID.
+// openOrderModal opens the 3-field order creation modal, pre-filling component if already known.
+func openOrderModal(s *discordgo.Session, i *discordgo.InteractionCreate, component, qual, qty string) {
+	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseModal,
+		Data: &discordgo.InteractionResponseData{
+			CustomID: "order_modal",
+			Title:    "G.A.L.E.R.E - Nouvelle commande",
+			Components: []discordgo.MessageComponent{
+				textRow("component", "Ressource", "ex. Taranite, Hadanite, Riccite ...", component, true),
+				textRow("quality", "Qualité (0 si ressource sans qualité)", "ex. 750", qual, false),
+				textRow("quantity", "Quantité (cSCU | Unités)", "ex. 150", qty, true),
+			},
+		},
+	}); err != nil {
+		slog.Debug("failed to open order modal", "err", err)
+	}
 }
 
 // --- helpers ---

@@ -34,7 +34,7 @@ ordered ──→ ready ──→ done
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `DISCORD_TOKEN` | Yes | — | Discord bot token |
-| `CORP_ID` | Yes | — | Discord guild (server) ID |
+| `CORP_ID` | Yes | — | Discord Corp (server) ID |
 | `DB_PATH` | No | `wackorder.db` | SQLite database file path |
 | `LOG_LEVEL` | No | `info` | `debug` / `info` / `warn` / `error` |
 | `LOG_FORMAT` | No | `text` or `json` | Log format |
@@ -43,7 +43,7 @@ ordered ──→ ready ──→ done
 
 ```bash
 go build -o wackorder ./cmd/wackorder
-DISCORD_TOKEN=your_token CORP_ID=your_guild_id ./wackorder
+DISCORD_TOKEN=your_token CORP_ID=your_server_id ./wackorder
 ```
 
 ## Run with Docker
@@ -53,7 +53,7 @@ docker build -t wackorder .
 docker run -d \
   --name wackorder \
   -e DISCORD_TOKEN=your_token \
-  -e CORP_ID=your_guild_id \
+  -e CORP_ID=your_server_id \
   -v wackorder-data:/data \
   wackorder
 ```
