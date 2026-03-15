@@ -78,11 +78,11 @@ func (h *handler) handleOrder(s *discordgo.Session, i *discordgo.InteractionCrea
 		Type: discordgo.InteractionResponseModal,
 		Data: &discordgo.InteractionResponseData{
 			CustomID: "order_modal",
-			Title:    "Place an Order",
+			Title:    "G.A.L.E.R.E - Passer une commande",
 			Components: []discordgo.MessageComponent{
-				textRow("component", "Component", "e.g. Klaus & Werner FS-9 Shield Generator", compValue, true),
-				textRow("quality", "Minimum Quality", "e.g. A, B, Mil-Spec (leave blank for any)", qualValue, false),
-				textRow("quantity", "Quantity (cSCU)", "e.g. 10", qtyValue, true),
+				textRow("component", "Ressource", "e.g. Tarnanite, Hadanite, Riccite ...", compValue, true),
+				textRow("quality", "Qualité", "e.g. 750", qualValue, false),
+				textRow("quantity", "Quantité (cSCU | Units)", "e.g. 150", qtyValue, true),
 			},
 		},
 	}); err != nil {

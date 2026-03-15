@@ -36,7 +36,7 @@ func (h *handler) handleOrderCancel(s *discordgo.Session, i *discordgo.Interacti
 		return
 	}
 
-	if err := h.store.UpdateStatus(context.Background(), orderID, model.StatusCanceled, nil); err != nil {
+	if err := h.store.UpdateStatus(context.Background(), orderID, model.StatusCanceled); err != nil {
 		slog.Error("failed to cancel order", "order_id", orderID, "by", caller, "err", err)
 		respond(s, i, errEmbed("Failed to cancel the order. Please try again later."))
 		return

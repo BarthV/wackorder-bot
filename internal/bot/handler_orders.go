@@ -10,11 +10,11 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// handleOrders processes the /orders slash command.
+// handleOrders processes the /order-view slash command.
 func (h *handler) handleOrders(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	opts := optionMap(i.ApplicationCommandData().Options)
 
-	// /orders component:<name> — search across all users, ignores view/since
+	// /order-view component:<name> — search across all users, ignores view/since
 	if compOpt, ok := opts["component"]; ok {
 		name := strings.TrimSpace(compOpt.StringValue())
 		if name == "" {
@@ -31,7 +31,7 @@ func (h *handler) handleOrders(s *discordgo.Session, i *discordgo.InteractionCre
 		return
 	}
 
-	// /orders since:<date> — filter by creation date, all users.
+	// /order-view since:<date> — filter by creation date, all users.
 	// Dates are interpreted as midnight UTC.
 	if sinceOpt, ok := opts["since"]; ok {
 		raw := strings.TrimSpace(sinceOpt.StringValue())
@@ -50,8 +50,8 @@ func (h *handler) handleOrders(s *discordgo.Session, i *discordgo.InteractionCre
 		return
 	}
 
-	// /orders [view:<mine|pending|all>]
-	view := "mine"
+	// /order-view [view:<self|pending|all>]
+	view := "pending"
 	if viewOpt, ok := opts["view"]; ok {
 		view = viewOpt.StringValue()
 	}
@@ -75,7 +75,7 @@ func (h *handler) handleOrders(s *discordgo.Session, i *discordgo.InteractionCre
 		}
 		respondEmbeds(s, i, orderListEmbeds(orders, "All orders"), discordgo.MessageFlagsEphemeral)
 
-	default: // "mine"
+	default: // "self"
 		caller, ok := requireCallerID(s, i)
 		if !ok {
 			return

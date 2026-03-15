@@ -40,9 +40,36 @@ CREATE INDEX IF NOT EXISTS idx_orders_component  ON orders(component COLLATE NOC
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
 `,
 	},
+	{
+		version: 2,
+		name:    "remove_in_transit_and_meeting_date",
+		sql: `
+UPDATE orders SET status = 'ready' WHERE status = 'in-transit';
+CREATE TABLE orders_new (
+	id           INTEGER PRIMARY KEY AUTOINCREMENT,
+	creator_id   TEXT    NOT NULL,
+	creator_name TEXT    NOT NULL,
+	component    TEXT    NOT NULL,
+	min_quality  TEXT    NOT NULL DEFAULT '',
+	quantity     INTEGER NOT NULL CHECK (quantity > 0),
+	status       TEXT    NOT NULL DEFAULT 'ordered'
+	             CHECK (status IN ('ordered','ready','done','canceled')),
+	created_at   TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+	updated_at   TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
+INSERT INTO orders_new (id, creator_id, creator_name, component, min_quality, quantity, status, created_at, updated_at)
+	SELECT id, creator_id, creator_name, component, min_quality, quantity, status, created_at, updated_at FROM orders;
+DROP TABLE orders;
+ALTER TABLE orders_new RENAME TO orders;
+CREATE INDEX IF NOT EXISTS idx_orders_creator_id ON orders(creator_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status     ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_component  ON orders(component COLLATE NOCASE);
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
+`,
+	},
 	// Add future migrations here, e.g.:
 	// {
-	//   version: 2,
+	//   version: 3,
 	//   name:    "add_components_table",
 	//   sql:     `CREATE TABLE components (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE);`,
 	// },

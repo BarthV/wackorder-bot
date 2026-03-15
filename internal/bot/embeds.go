@@ -5,18 +5,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/barthv/wackorder-bot/internal/model"
+	"github.com/bwmarrin/discordgo"
 )
 
 // Status colors for Discord embeds.
 const (
-	colorOrdered   = 0x5865F2 // blurple
-	colorReady     = 0x57F287 // green
-	colorInTransit = 0xFEE75C // yellow
-	colorDone      = 0x95A5A6 // grey
-	colorCanceled  = 0xED4245 // red
-	colorError     = 0xED4245 // red
+	colorOrdered  = 0x5865F2 // blurple
+	colorReady    = 0x57F287 // green
+	colorDone     = 0x95A5A6 // grey
+	colorCanceled = 0xED4245 // red
+	colorError    = 0xED4245 // red
 )
 
 func statusColor(s model.Status) int {
@@ -25,8 +24,6 @@ func statusColor(s model.Status) int {
 		return colorOrdered
 	case model.StatusReady:
 		return colorReady
-	case model.StatusInTransit:
-		return colorInTransit
 	case model.StatusDone:
 		return colorDone
 	case model.StatusCanceled:
@@ -40,11 +37,9 @@ func statusLabel(s model.Status) string {
 	case model.StatusOrdered:
 		return "📋 Ordered"
 	case model.StatusReady:
-		return "✅ Ready"
-	case model.StatusInTransit:
-		return "🚚 In Transit"
+		return "📦 Ready"
 	case model.StatusDone:
-		return "🏁 Done"
+		return "✅ Done"
 	case model.StatusCanceled:
 		return "❌ Canceled"
 	}
@@ -60,14 +55,6 @@ func orderEmbed(o *model.Order) *discordgo.MessageEmbed {
 		{Name: "Status", Value: statusLabel(o.Status), Inline: true},
 		{Name: "Ordered by", Value: fmt.Sprintf("%s (<@%s>)", o.CreatorName, o.CreatorID), Inline: true},
 		{Name: "Created", Value: formatTime(o.CreatedAt), Inline: true},
-	}
-
-	if o.MeetingDate != nil {
-		fields = append(fields, &discordgo.MessageEmbedField{
-			Name:   "Meeting Date",
-			Value:  formatTime(*o.MeetingDate),
-			Inline: true,
-		})
 	}
 
 	return &discordgo.MessageEmbed{
@@ -105,13 +92,11 @@ func orderListEmbeds(orders []model.Order, title string) []*discordgo.MessageEmb
 
 		var sb strings.Builder
 		for _, o := range chunk {
-			line := fmt.Sprintf("`#%d` **%s** — %d cSCU | Q: %s | %s | %s (<@%s>) | %s\n",
-				o.ID, o.Component, o.Quantity, qualityOrAny(o.MinQuality),
-				statusLabel(o.Status), o.CreatorName, o.CreatorID, formatDate(o.CreatedAt))
+			line := fmt.Sprintf("`#%d` **%s** — %s | %d cSCU - Q%s | <@%s> (%s)\n",
+				o.ID, o.Component, statusLabel(o.Status),
+				o.Quantity, qualityOrAny(o.MinQuality),
+				o.CreatorID, formatDate(o.CreatedAt))
 			sb.WriteString(line)
-			if o.MeetingDate != nil {
-				sb.WriteString(fmt.Sprintf("  📅 Meeting: %s\n", formatTime(*o.MeetingDate)))
-			}
 		}
 
 		pageTitle := title

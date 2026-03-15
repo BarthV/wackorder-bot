@@ -94,8 +94,8 @@ func TestListPending(t *testing.T) {
 	s.Create(context.Background(), "u3", "C", "Part3", "", 3)
 
 	// Mark one as done, one as ready.
-	s.UpdateStatus(context.Background(), id1, model.StatusDone, nil)
-	s.UpdateStatus(context.Background(), id2, model.StatusReady, nil)
+	s.UpdateStatus(context.Background(), id1, model.StatusDone)
+	s.UpdateStatus(context.Background(), id2, model.StatusReady)
 
 	pending, err := s.ListPending(context.Background())
 	if err != nil {
@@ -160,32 +160,11 @@ func TestListSince(t *testing.T) {
 	}
 }
 
-func TestUpdateStatus_WithMeetingDate(t *testing.T) {
-	s := newTestStore(t)
-	id := createOrder(t, s)
-
-	meeting := time.Now().Add(24 * time.Hour).UTC().Truncate(time.Second)
-	if err := s.UpdateStatus(context.Background(), id, model.StatusInTransit, &meeting); err != nil {
-		t.Fatalf("UpdateStatus in-transit: %v", err)
-	}
-
-	o, _ := s.GetByID(context.Background(), id)
-	if o.Status != model.StatusInTransit {
-		t.Errorf("expected in-transit, got %q", o.Status)
-	}
-	if o.MeetingDate == nil {
-		t.Fatal("expected meeting_date to be set")
-	}
-	if !o.MeetingDate.Equal(meeting) {
-		t.Errorf("meeting date mismatch: got %v, want %v", o.MeetingDate, meeting)
-	}
-}
-
 func TestUpdateStatus_Done(t *testing.T) {
 	s := newTestStore(t)
 	id := createOrder(t, s)
 
-	if err := s.UpdateStatus(context.Background(), id, model.StatusDone, nil); err != nil {
+	if err := s.UpdateStatus(context.Background(), id, model.StatusDone); err != nil {
 		t.Fatalf("UpdateStatus done: %v", err)
 	}
 	o, _ := s.GetByID(context.Background(), id)
@@ -223,21 +202,9 @@ func TestValidateTransition_CanceledIsTerminal(t *testing.T) {
 }
 
 func TestValidateTransition_InvalidForward(t *testing.T) {
-	// in-transit cannot go back to ready
-	err := model.ValidateTransition(model.StatusInTransit, model.StatusReady, false)
+	// ready cannot go back to ordered
+	err := model.ValidateTransition(model.StatusReady, model.StatusOrdered, false)
 	if err == nil {
-		t.Error("in-transit → ready should be invalid")
-	}
-}
-
-func TestRequiresMeetingDate(t *testing.T) {
-	if !model.RequiresMeetingDate(model.StatusInTransit) {
-		t.Error("in-transit should require meeting date")
-	}
-	if model.RequiresMeetingDate(model.StatusReady) {
-		t.Error("ready should not require meeting date")
-	}
-	if model.RequiresMeetingDate(model.StatusDone) {
-		t.Error("done should not require meeting date")
+		t.Error("ready → ordered should be invalid")
 	}
 }

@@ -9,18 +9,16 @@ import (
 type Status string
 
 const (
-	StatusOrdered   Status = "ordered"
-	StatusReady     Status = "ready"
-	StatusInTransit Status = "in-transit"
-	StatusDone      Status = "done"
-	StatusCanceled  Status = "canceled"
+	StatusOrdered  Status = "ordered"
+	StatusReady    Status = "ready"
+	StatusDone     Status = "done"
+	StatusCanceled Status = "canceled"
 )
 
 // AllStatuses lists every valid status value.
 var AllStatuses = []Status{
 	StatusOrdered,
 	StatusReady,
-	StatusInTransit,
 	StatusDone,
 	StatusCanceled,
 }
@@ -29,7 +27,6 @@ var AllStatuses = []Status{
 var ActiveStatuses = []Status{
 	StatusOrdered,
 	StatusReady,
-	StatusInTransit,
 }
 
 // ParseStatus converts a string to a Status, returning an error if invalid.
@@ -40,12 +37,7 @@ func ParseStatus(s string) (Status, error) {
 			return st, nil
 		}
 	}
-	return "", fmt.Errorf("invalid status %q: must be one of ordered, ready, in-transit, done, canceled", s)
-}
-
-// RequiresMeetingDate returns true when the target status requires a meeting date.
-func RequiresMeetingDate(next Status) bool {
-	return next == StatusInTransit
+	return "", fmt.Errorf("invalid status %q: must be one of ordered, ready, done, canceled", s)
 }
 
 // ValidateTransition checks whether transitioning from current to next is allowed.
@@ -69,9 +61,8 @@ func ValidateTransition(current, next Status, isCreator bool) error {
 
 	// Valid forward transitions.
 	allowed := map[Status][]Status{
-		StatusOrdered:   {StatusReady, StatusInTransit, StatusDone},
-		StatusReady:     {StatusInTransit, StatusDone},
-		StatusInTransit: {StatusDone},
+		StatusOrdered: {StatusReady, StatusDone},
+		StatusReady:   {StatusDone},
 	}
 
 	for _, a := range allowed[current] {
@@ -92,7 +83,6 @@ type Order struct {
 	MinQuality  string
 	Quantity    int
 	Status      Status
-	MeetingDate *time.Time
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }

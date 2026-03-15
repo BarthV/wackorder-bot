@@ -7,32 +7,32 @@ func commands() []*discordgo.ApplicationCommand {
 	return []*discordgo.ApplicationCommand{
 		{
 			Name:        "order",
-			Description: "Place a new component order. Omit options to use the modal form.",
+			Description: "Passer une commande de ressource (via popup si les options sont non déclarées)",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "component",
-					Description: "Component name (e.g. 'Klaus & Werner FS-9 Shield Generator')",
+					Description: "Nom de la ressource désirée (Taranite, Hadanite, Riccite, ...)",
 					Required:    false,
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "quality",
-					Description: "Minimum quality (e.g. A, B, Mil-Spec)",
+					Description: "Qualité minimale",
 					Required:    false,
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionInteger,
 					Name:        "quantity",
-					Description: "Quantity in cSCU",
+					Description: "Quantité en cSCU ou en Unités (selon le type de ressource)",
 					Required:    false,
 					MinValue:    floatPtr(1),
 				},
 			},
 		},
 		{
-			Name:        "orders",
-			Description: "List orders. Defaults to your own orders.",
+			Name:        "order-view",
+			Description: "Lister les commandes enregistrées avec possibilité de filtrage",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
@@ -40,8 +40,8 @@ func commands() []*discordgo.ApplicationCommand {
 					Description: "Which orders to show",
 					Required:    false,
 					Choices: []*discordgo.ApplicationCommandOptionChoice{
-						{Name: "mine — your own orders (all statuses)", Value: "mine"},
-						{Name: "pending — all unfinished orders", Value: "pending"},
+						{Name: "self — your own orders (all statuses)", Value: "self"},
+						{Name: "pending — unfinished orders (ordered / ready)", Value: "pending"},
 						{Name: "all — every order", Value: "all"},
 					},
 				},
@@ -77,15 +77,8 @@ func commands() []*discordgo.ApplicationCommand {
 					Required:    false,
 					Choices: []*discordgo.ApplicationCommandOptionChoice{
 						{Name: "ready — item produced/gathered", Value: "ready"},
-						{Name: "in-transit — meeting booked (requires meeting_date)", Value: "in-transit"},
 						{Name: "done — order complete", Value: "done"},
 					},
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "meeting_date",
-					Description: "Meeting date for in-transit status, e.g. 2026-01-20T18:00:00Z",
-					Required:    false,
 				},
 			},
 		},

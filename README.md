@@ -5,11 +5,9 @@ A Star Citizen order management Discord bot. Players register component orders; 
 ## Order lifecycle
 
 ```
-ordered ──→ ready ──→ in-transit (requires meeting date) ──→ done
-        │         │                                      │
-        └─────────┴──────────────────────────────────────┘
-                                                          ↓
-                                                        done
+ordered ──→ ready ──→ done
+        │         │
+        └─────────┘
         (canceled from any non-done state, by creator only)
 ```
 
@@ -19,17 +17,17 @@ ordered ──→ ready ──→ in-transit (requires meeting date) ──→ d
 |---------|-------------|
 | `/order` | Open modal to place an order |
 | `/order component:x quality:y quantity:n` | Place an order directly |
-| `/orders` | Your own orders (all statuses) |
-| `/orders view:pending` | All unfinished orders (ordered / ready / in-transit) |
-| `/orders view:all` | Every order |
-| `/orders component:<name>` | Search by component name (case-insensitive) |
-| `/orders since:<date>` | Orders created since a date (YYYY-MM-DD or RFC3339) |
+| `/order-view` | Your own orders (all statuses) |
+| `/order-view view:self` | Your own orders (all statuses) |
+| `/order-view view:pending` | All unfinished orders (ordered / ready) |
+| `/order-view view:all` | Every order |
+| `/order-view component:<name>` | Search by component name (case-insensitive) |
+| `/order-view since:<date>` | Orders created since a date (YYYY-MM-DD or RFC3339) |
 | `/order-update` | Open modal to update an order's status |
 | `/order-update id:<n> status:<s>` | Update an order directly |
 | `/order-cancel id:<n>` | Cancel one of your own orders |
 
-**Status values:** `ready` · `in-transit` · `done`
-When setting `in-transit`, a `meeting_date` is required (YYYY-MM-DD or RFC3339).
+**Status values:** `ready` · `done`
 
 ## Environment variables
 

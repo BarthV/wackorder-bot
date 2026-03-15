@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/barthv/wackorder-bot/internal/model"
@@ -25,18 +24,7 @@ func (h *handler) handleOrderUpdate(s *discordgo.Session, i *discordgo.Interacti
 			respond(s, i, errEmbed(err.Error()))
 			return
 		}
-
-		var meetingDate *time.Time
-		if mdOpt, ok := opts["meeting_date"]; ok {
-			t, err := parseDate(strings.TrimSpace(mdOpt.StringValue()))
-			if err != nil {
-				respond(s, i, errEmbed("Invalid meeting_date format. Use YYYY-MM-DD or RFC3339."))
-				return
-			}
-			meetingDate = &t
-		}
-
-		h.applyUpdate(s, i, orderID, newStatus, meetingDate)
+		h.applyUpdate(s, i, orderID, newStatus)
 		return
 	}
 
@@ -53,8 +41,7 @@ func (h *handler) handleOrderUpdate(s *discordgo.Session, i *discordgo.Interacti
 			Title:    "Update Order Status",
 			Components: []discordgo.MessageComponent{
 				textRow("id", "Order ID", "e.g. 42", idValue, true),
-				textRow("status", "New Status", "ready / in-transit / done", "", true),
-				textRow("meeting_date", "Meeting Date (for in-transit)", "e.g. 2026-01-20T18:00:00Z", "", false),
+				textRow("status", "New Status", "ready / done", "", true),
 			},
 		},
 	}); err != nil {
@@ -69,7 +56,6 @@ func (h *handler) handleUpdateModalSubmit(s *discordgo.Session, i *discordgo.Int
 
 	idStr := strings.TrimSpace(fields["id"])
 	statusStr := strings.TrimSpace(fields["status"])
-	meetingDateStr := strings.TrimSpace(fields["meeting_date"])
 
 	var orderID int64
 	if _, err := fmt.Sscanf(idStr, "%d", &orderID); err != nil || orderID <= 0 {
@@ -83,21 +69,11 @@ func (h *handler) handleUpdateModalSubmit(s *discordgo.Session, i *discordgo.Int
 		return
 	}
 
-	var meetingDate *time.Time
-	if meetingDateStr != "" {
-		t, err := parseDate(meetingDateStr)
-		if err != nil {
-			respond(s, i, errEmbed("Invalid meeting_date format. Use YYYY-MM-DD or RFC3339."))
-			return
-		}
-		meetingDate = &t
-	}
-
-	h.applyUpdate(s, i, orderID, newStatus, meetingDate)
+	h.applyUpdate(s, i, orderID, newStatus)
 }
 
 // applyUpdate validates and applies a status transition, then responds with the updated order embed.
-func (h *handler) applyUpdate(s *discordgo.Session, i *discordgo.InteractionCreate, orderID int64, newStatus model.Status, meetingDate *time.Time) {
+func (h *handler) applyUpdate(s *discordgo.Session, i *discordgo.InteractionCreate, orderID int64, newStatus model.Status) {
 	caller, ok := requireCallerID(s, i)
 	if !ok {
 		return
@@ -115,12 +91,7 @@ func (h *handler) applyUpdate(s *discordgo.Session, i *discordgo.InteractionCrea
 		return
 	}
 
-	if model.RequiresMeetingDate(newStatus) && meetingDate == nil {
-		respond(s, i, errEmbed("A meeting_date is required when setting status to in-transit."))
-		return
-	}
-
-	if err := h.store.UpdateStatus(context.Background(), orderID, newStatus, meetingDate); err != nil {
+	if err := h.store.UpdateStatus(context.Background(), orderID, newStatus); err != nil {
 		slog.Error("failed to update order status", "order_id", orderID, "new_status", newStatus, "by", caller, "err", err)
 		respond(s, i, errEmbed("Failed to update the order. Please try again later."))
 		return

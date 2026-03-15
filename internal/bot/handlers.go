@@ -19,7 +19,7 @@ func (h *handler) onInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 		switch i.ApplicationCommandData().Name {
 		case "order":
 			h.handleOrder(s, i)
-		case "orders":
+		case "order-view":
 			h.handleOrders(s, i)
 		case "order-update":
 			h.handleOrderUpdate(s, i)
