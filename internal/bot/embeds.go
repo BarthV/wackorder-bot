@@ -52,7 +52,7 @@ func orderEmbed(o *model.Order) *discordgo.MessageEmbed {
 		{Name: "Ressource", Value: o.Component, Inline: true},
 		{Name: "Quantité", Value: fmt.Sprintf("%d cSCU", o.Quantity), Inline: true},
 		{Name: "Statut", Value: statusLabel(o.Status), Inline: true},
-		{Name: "Commandé par", Value: fmt.Sprintf("%s (<@%s>)", o.CreatorName, o.CreatorID), Inline: true},
+		{Name: "Commandé par", Value: fmt.Sprintf("<@%s>", o.CreatorID), Inline: true},
 		{Name: "Créé le", Value: formatTime(o.CreatedAt), Inline: true},
 	}
 
