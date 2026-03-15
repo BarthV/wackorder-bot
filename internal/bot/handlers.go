@@ -34,12 +34,18 @@ func (h *handler) onInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 			h.handleOrderUpdate(s, i)
 		case "order-cancel":
 			h.handleOrderCancel(s, i)
+		case "order-stats":
+			h.handleOrderStats(s, i)
 		case "order-help":
 			h.handleOrderHelp(s, i)
 		}
 
 	case discordgo.InteractionMessageComponent:
-		if strings.HasPrefix(i.MessageComponentData().CustomID, statusSelectCustomID) {
+		cid := i.MessageComponentData().CustomID
+		switch {
+		case strings.HasPrefix(cid, statsFilterCustomID):
+			h.handleStatsFilter(s, i)
+		case strings.HasPrefix(cid, statusSelectCustomID):
 			h.handleStatusSelect(s, i)
 		}
 

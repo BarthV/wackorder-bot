@@ -91,6 +91,20 @@ func commands() []*discordgo.ApplicationCommand {
 			},
 		},
 		{
+			Name:        "order-stats",
+			Description: "Afficher un résumé des quantités en attente par ressource.",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionInteger,
+					Name:        "jours",
+					Description: "Nombre de jours dans l'histogramme (1–32, défaut 32)",
+					Required:    false,
+					MinValue:    floatPtr(1),
+					MaxValue:    histDefaultCols,
+				},
+			},
+		},
+		{
 			Name:        "order-help",
 			Description: "Afficher l'aide et la liste des ressources disponibles.",
 		},
