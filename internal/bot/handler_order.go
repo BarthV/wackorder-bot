@@ -30,10 +30,13 @@ func (h *handler) handleOrder(s *discordgo.Session, i *discordgo.InteractionCrea
 	quality, hasQual := opts["quality"]
 	quantityOpt, hasQty := opts["quantity"]
 
-	// All fields provided — create directly.
-	if hasComp && hasQual && hasQty {
+	// Component and quantity provided — create directly (quality defaults to "0").
+	if hasComp && hasQty {
 		comp := strings.TrimSpace(component.StringValue())
-		qual := strings.TrimSpace(quality.StringValue())
+		qual := "0"
+		if hasQual {
+			qual = strings.TrimSpace(quality.StringValue())
+		}
 
 		if err := validateOrderFields(comp, qual); err != nil {
 			respond(s, i, errEmbed(err.Error()))
@@ -63,7 +66,7 @@ func (h *handler) handleOrder(s *discordgo.Session, i *discordgo.InteractionCrea
 	}
 
 	// Missing at least one field — open modal with pre-filled values.
-	compValue, qualValue, qtyValue := "", "", ""
+	compValue, qualValue, qtyValue := "", "0", ""
 	if hasComp {
 		compValue = component.StringValue()
 	}
@@ -102,6 +105,9 @@ func (h *handler) handleOrderModalSubmit(s *discordgo.Session, i *discordgo.Inte
 
 	component := strings.TrimSpace(fields["component"])
 	quality := strings.TrimSpace(fields["quality"])
+	if quality == "" {
+		quality = "0"
+	}
 	qtyStr := strings.TrimSpace(fields["quantity"])
 
 	if err := validateOrderFields(component, quality); err != nil {

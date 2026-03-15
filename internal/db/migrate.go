@@ -67,9 +67,14 @@ CREATE INDEX IF NOT EXISTS idx_orders_component  ON orders(component COLLATE NOC
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
 `,
 	},
+	{
+		version: 3,
+		name:    "default_min_quality_to_zero",
+		sql:     `UPDATE orders SET min_quality = '0' WHERE min_quality = '';`,
+	},
 	// Add future migrations here, e.g.:
 	// {
-	//   version: 3,
+	//   version: 4,
 	//   name:    "add_components_table",
 	//   sql:     `CREATE TABLE components (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE);`,
 	// },
