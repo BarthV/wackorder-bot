@@ -20,18 +20,10 @@ const (
 )
 
 // handleOrderStats processes the /order-stats slash command.
-// It shows summed pending quantities per resource, an ASCII histogram of creation dates,
-// and per-resource filter buttons.
+// It shows summed pending quantities per resource (sorted by quantity desc),
+// an ASCII histogram of creation dates with axes, and per-resource filter buttons.
 func (h *handler) handleOrderStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	opts := optionMap(i.ApplicationCommandData().Options)
-
-	maxCols := histDefaultCols
-	if colsOpt, ok := opts["jours"]; ok {
-		v := int(colsOpt.IntValue())
-		if v >= 1 && v <= histDefaultCols {
-			maxCols = v
-		}
-	}
 
 	orders, err := h.store.ListPending(context.Background())
 	if err != nil {
@@ -45,40 +37,60 @@ func (h *handler) handleOrderStats(s *discordgo.Session, i *discordgo.Interactio
 		return
 	}
 
+	// Determine histogram column count: explicit option or default (full width).
+	maxCols := histDefaultCols
+	if colsOpt, ok := opts["jours"]; ok {
+		v := int(colsOpt.IntValue())
+		if v >= 1 && v <= histDefaultCols {
+			maxCols = v
+		}
+	}
+
 	// Sum quantities per component.
 	totals := make(map[string]int)
 	for _, o := range orders {
 		totals[o.Component] += o.Quantity
 	}
 
-	// Sort components alphabetically for consistent display.
+	// Sort components by quantity descending; ties broken alphabetically.
 	components := make([]string, 0, len(totals))
 	for comp := range totals {
 		components = append(components, comp)
 	}
-	sort.Strings(components)
+	sort.Slice(components, func(a, b int) bool {
+		if totals[components[a]] != totals[components[b]] {
+			return totals[components[a]] > totals[components[b]]
+		}
+		return components[a] < components[b]
+	})
 
-	// One embed field per resource.
-	fields := make([]*discordgo.MessageEmbedField, len(components))
-	for j, comp := range components {
-		fields[j] = &discordgo.MessageEmbedField{
-			Name:   comp,
-			Value:  fmt.Sprintf("%d", totals[comp]),
-			Inline: true,
+	// Resources code block: 1 per line, quantities right-aligned.
+	maxNameLen := 0
+	for _, comp := range components {
+		if len(comp) > maxNameLen {
+			maxNameLen = len(comp)
 		}
 	}
+	maxQtyLen := len(fmt.Sprintf("%d", totals[components[0]])) // already sorted desc
+	var resLines []string
+	for _, comp := range components {
+		resLines = append(resLines, fmt.Sprintf("%-*s  %*d", maxNameLen, comp, maxQtyLen, totals[comp]))
+	}
+	resourcesBlock := "```\n" + strings.Join(resLines, "\n") + "\n```"
 
-	// Histogram in a code block (creation dates of pending orders).
-	description := ""
+	// Histogram code block.
+	histBlock := ""
 	if hist := buildHistogram(orders, maxCols, histMaxHeight); hist != "" {
-		description = "```\n" + hist + "\n```"
+		histBlock = "```\n" + hist + "\n```\n"
 	}
 
 	embed := &discordgo.MessageEmbed{
 		Title:       "📊 Commandes en attente",
-		Description: description,
-		Fields:      fields,
+		Description: histBlock + resourcesBlock,
 		Color:       colorOrdered,
+		Footer: &discordgo.MessageEmbedFooter{
+			Text: fmt.Sprintf("%d commande(s) en attente", len(orders)),
+		},
 	}
 
 	// Build filter buttons (one per component, max histMaxButtons = 5×5).
@@ -140,9 +152,16 @@ func (h *handler) handleStatsFilter(s *discordgo.Session, i *discordgo.Interacti
 	respondEmbeds(s, i, orderListEmbeds(pending, title), discordgo.MessageFlagsEphemeral)
 }
 
-// buildHistogram returns the body of an ASCII histogram of order creation dates.
-// Columns run left (oldest / catch-all) to right (today), one column per day.
-// Height is scaled so the tallest bucket fills maxHeight rows.
+// buildHistogram returns an ASCII histogram with y-axis labels and x-axis graduation.
+// Columns: leftmost = catch-all for older orders, rightmost = today.
+// Example output (maxCols=10, maxHeight=4):
+//
+//	4│    █    █
+//	3│    █    █  █
+//	2│ █  █  █ █  █
+//	1│ █  █  █ █  █  █
+//	 └──────────────→
+//	  +9d    +4d  now
 func buildHistogram(orders []model.Order, maxCols, maxHeight int) string {
 	now := time.Now().UTC().Truncate(24 * time.Hour)
 	buckets := make([]int, maxCols)
@@ -166,11 +185,18 @@ func buildHistogram(orders []model.Order, maxCols, maxHeight int) string {
 		return ""
 	}
 
-	rows := make([]string, maxHeight)
+	// Y-axis label width (number of digits of the max value).
+	yLabelWidth := len(fmt.Sprintf("%d", maxVal))
+
+	var lines []string
+
+	// Bar rows, top to bottom.
 	for rowIdx := maxHeight; rowIdx >= 1; rowIdx-- {
+		// The count threshold for this row level (ceiling division).
+		rowVal := (rowIdx*maxVal + maxHeight - 1) / maxHeight
 		var sb strings.Builder
+		fmt.Fprintf(&sb, "%*d│", yLabelWidth, rowVal)
 		for col := 0; col < maxCols; col++ {
-			// Ceiling division: any non-zero bucket shows at least 1 cell.
 			filled := (buckets[col]*maxHeight + maxVal - 1) / maxVal
 			if filled >= rowIdx {
 				sb.WriteRune('█')
@@ -178,7 +204,45 @@ func buildHistogram(orders []model.Order, maxCols, maxHeight int) string {
 				sb.WriteByte(' ')
 			}
 		}
-		rows[maxHeight-rowIdx] = sb.String()
+		lines = append(lines, sb.String())
 	}
-	return strings.Join(rows, "\n")
+
+	// X-axis line: spaces aligned with y-axis, then corner + dashes + arrow.
+	xPad := strings.Repeat(" ", yLabelWidth) + "└"
+	lines = append(lines, xPad+strings.Repeat("─", maxCols)+"→")
+
+	// X-axis labels.
+	lines = append(lines, strings.Repeat(" ", yLabelWidth+1)+buildXAxisLabels(maxCols))
+
+	return strings.Join(lines, "\n")
+}
+
+// buildXAxisLabels returns a maxCols-wide string with day labels at regular intervals.
+// Leftmost position: "+Nd" catch-all label. Rightmost: "now". Every ~8 cols in between.
+func buildXAxisLabels(maxCols int) string {
+	buf := []rune(strings.Repeat(" ", maxCols))
+
+	place := func(col int, label string) {
+		for k, ch := range label {
+			if col+k < len(buf) {
+				buf[col+k] = ch
+			}
+		}
+	}
+
+	leftLabel := fmt.Sprintf("+%dd", maxCols-1)
+	nowLabel := "now"
+	nowPos := maxCols - len(nowLabel)
+
+	place(0, leftLabel)
+	if nowPos > len(leftLabel) {
+		place(nowPos, nowLabel)
+	}
+
+	// Intermediate labels every 8 columns, only if they don't collide with "now".
+	for col := 8; col < nowPos-2; col += 8 {
+		place(col, fmt.Sprintf("+%dd", maxCols-1-col))
+	}
+
+	return string(buf)
 }
