@@ -17,14 +17,17 @@ ordered ──→ ready ──→ done
 |---------|-------------|
 | `/order` | Open modal to place an order |
 | `/order component:x quality:y quantity:n` | Place an order directly |
-| `/order-list` | Your own orders (all statuses) |
-| `/order-list view:self` | Your own orders (all statuses) |
-| `/order-list view:pending` | All unfinished orders (ordered / ready) |
-| `/order-list view:all` | Every order |
-| `/order-list component:<name>` | Search by component name (case-insensitive) |
-| `/order-list since:<date>` | Orders created since a date (YYYY-MM-DD or RFC3339) |
-| `/order-update` | Open modal to update an order's status |
+| `/order-list` | All pending orders (default) |
+| `/order-list mode:self` | Your own orders (all statuses) |
+| `/order-list mode:pending` | All unfinished orders (ordered / ready) |
+| `/order-list mode:all` | Every order |
+| `/order-list mode:booked` | Ready orders you last updated |
+| `/order-list component:<name>` | Filter by component name (case-insensitive, combinable with mode) |
+| `/order-list older-than:<d>` | Filter orders older than a duration (e.g. `7`, `2w`, `1mo`) |
+| `/order-update id:<n>` | Show a status picker for an order |
 | `/order-update id:<n> status:<s>` | Update an order directly |
+| `/order-update my-book:done` | Mark all your booked (ready) orders as done |
+| `/order-update my-book:ordered` | Return all your booked orders to ordered |
 | `/order-cancel id:<n>` | Cancel one of your own orders |
 
 **Status values:** `ready` · `done`
@@ -79,4 +82,4 @@ internal/
   bot/                # Discord session, slash commands, interaction handlers
 ```
 
-The `store.Repository` interface decouples the bot from SQLite — swap in any backend by implementing the 8-method interface.
+The `store.Repository` interface decouples the bot from SQLite — swap in any backend by implementing the 11-method interface.

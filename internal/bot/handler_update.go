@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/barthv/wackorder-bot/internal/model"
+	"github.com/bwmarrin/discordgo"
 )
 
 // statusSelectCustomID is the prefix for string select custom IDs encoding the order ID.
@@ -47,12 +47,12 @@ func (h *handler) handleOrderUpdateAutocomplete(s *discordgo.Session, i *discord
 }
 
 // handleOrderUpdate processes the /order-update slash command.
-// Priority: all-my-ready > id+status > id alone (string select).
+// Priority: my-book > id+status > id alone (string select).
 func (h *handler) handleOrderUpdate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	opts := optionMap(i.ApplicationCommandData().Options)
 
-	// all-my-ready takes precedence over all other options.
-	if allReadyOpt, ok := opts["all-my-ready"]; ok {
+	// my-book takes precedence over all other options.
+	if allReadyOpt, ok := opts["my-book"]; ok {
 		newStatus, err := model.ParseStatus(allReadyOpt.StringValue())
 		if err != nil {
 			respond(s, i, errEmbed(err.Error()))
@@ -64,7 +64,7 @@ func (h *handler) handleOrderUpdate(s *discordgo.Session, i *discordgo.Interacti
 
 	idOpt, hasID := opts["id"]
 	if !hasID {
-		respond(s, i, errEmbed("Fournis un identifiant de commande ou utilise `all-my-ready`."))
+		respond(s, i, errEmbed("Fournis un order ID ou utilise `my-book` pour traiter toutes tes commandes 'ready'."))
 		return
 	}
 	orderID := idOpt.IntValue()
@@ -95,16 +95,16 @@ func (h *handler) handleOrderUpdate(s *discordgo.Session, i *discordgo.Interacti
 	options := make([]discordgo.SelectMenuOption, len(nexts))
 	for j, st := range nexts {
 		options[j] = discordgo.SelectMenuOption{
-			Label:       statusLabel(st),
-			Value:       string(st),
-			Default:     false,
+			Label:   statusLabel(st),
+			Value:   string(st),
+			Default: false,
 		}
 	}
 
 	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Flags: discordgo.MessageFlagsEphemeral,
+			Flags:  discordgo.MessageFlagsEphemeral,
 			Embeds: []*discordgo.MessageEmbed{orderEmbed(order)},
 			Components: []discordgo.MessageComponent{
 				discordgo.ActionsRow{
@@ -225,7 +225,7 @@ func (h *handler) applyStatusUpdate(s *discordgo.Session, i *discordgo.Interacti
 // Only ready→ordered and ready→done transitions are permitted.
 func (h *handler) applyAllMyReady(s *discordgo.Session, i *discordgo.InteractionCreate, newStatus model.Status) {
 	if newStatus != model.StatusOrdered && newStatus != model.StatusDone {
-		respond(s, i, errEmbed("all-my-ready n'accepte que les statuts 'ordered' ou 'done'."))
+		respond(s, i, errEmbed("my-book n'accepte que les statuts 'ordered' ou 'done'."))
 		return
 	}
 

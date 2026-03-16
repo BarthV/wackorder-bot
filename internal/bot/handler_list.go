@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/barthv/wackorder-bot/internal/model"
+	"github.com/bwmarrin/discordgo"
 )
 
 // handleOrders processes the /order-list slash command.
@@ -38,6 +38,13 @@ func (h *handler) handleOrders(s *discordgo.Session, i *discordgo.InteractionCre
 		}
 		orders, err = h.store.ListByCreator(context.Background(), caller)
 		baseTitle = "Mes commandes"
+	case "booked":
+		caller, ok := requireCallerID(s, i)
+		if !ok {
+			return
+		}
+		orders, err = h.store.ListReadyByUpdater(context.Background(), caller)
+		baseTitle = "Les commandes que je gère"
 	default: // "pending"
 		orders, err = h.store.ListPending(context.Background())
 		baseTitle = "Commandes en attente"

@@ -42,21 +42,22 @@ func commands() []*discordgo.ApplicationCommand {
 					Required:    false,
 					Choices: []*discordgo.ApplicationCommandOptionChoice{
 						{Name: "self — mes commandes (tous statuts)", Value: "self"},
-						{Name: "pending — commandes en attente (commandé / prêt)", Value: "pending"},
+						{Name: "pending — commandes en attente (commandées / prêtes)", Value: "pending"},
 						{Name: "all — toutes les commandes", Value: "all"},
+						{Name: "booked — toutes les commande que j'ai passée en 'prêt'", Value: "booked"},
 					},
 				},
 				{
 					Type:         discordgo.ApplicationCommandOptionString,
 					Name:         "component",
-					Description:  "Filtrer par nom de ressource (insensible à la casse, tous utilisateurs)",
+					Description:  "Filtrer par nom de ressource",
 					Required:     false,
 					Autocomplete: true,
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "older-than",
-					Description: "Filtrer les commandes plus anciennes que cette durée, ex. 7, 7d, 2w, 1mo",
+					Description: "Filtrer les commandes plus anciennes que la durée, ex. 7, 7d, 2w, 1mo",
 					Required:    false,
 				},
 			},
@@ -67,8 +68,8 @@ func commands() []*discordgo.ApplicationCommand {
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "all-my-ready",
-					Description: "Mettre à jour toutes mes commandes 'prêtes' vers ce statut (priorité sur les autres options)",
+					Name:        "my-book",
+					Description: "Mettre à jour toutes les commandes que j'ai passé en 'prêt'",
 					Required:    false,
 					Choices: []*discordgo.ApplicationCommandOptionChoice{
 						{Name: "ordered — remettre en attente", Value: "ordered"},
@@ -98,7 +99,7 @@ func commands() []*discordgo.ApplicationCommand {
 				{
 					Type:        discordgo.ApplicationCommandOptionInteger,
 					Name:        "jours",
-					Description: "Nombre de jours dans l'histogramme (1–32, défaut 32)",
+					Description: "Nombre de jours dans l'histogramme (1-32, défaut 32)",
 					Required:    false,
 					MinValue:    floatPtr(1),
 					MaxValue:    histDefaultCols,
