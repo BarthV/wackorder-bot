@@ -8,16 +8,19 @@ import (
 
 // handleOrderHelp processes the /order-help slash command.
 func (h *handler) handleOrderHelp(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	workflow := "**1. Passer une commande (la quantité est en cSCU)**\n" +
+	workflow := "**1- Passer une commande (la quantité est en cSCU ou en Unités)**\n" +
 		"```/order (via une popup)\n/order component:Taranite quality:850 quantity:150\n/order component:Dolivine quantity:35\n```\n" +
-		"**2. Rechercher les commandes en cours**\n" +
-		"```/order-list (pour un recap des demandes en cours)\n/order-list view:pending component:Taranite\n/order-list view:self (pour regarder ses propres commandes)\n```\n" +
-		"**3. Marquer la commande comme disponible (minée, récoltée, produite ...)**\n" +
+		"**2- Rechercher les commandes en cours**\n" +
+		"```/order-list (pour rechercher et filtrer les demandes en cours)\n/order-list component:Taranite older-than:1w (filtre par resource et par age)\n/order-list mode:self (pour filtrer ses propres commandes)\n```\n" +
+		"**3- Marquer la commande comme disponible (minée, récoltée, produite ...)**\n" +
 		"```/order-update id:42 status:ready```\n" +
-		"**4. Terminer la commande (livraison)**\n" +
+		"**4- Terminer la commande (livraison)**\n" +
 		"```/order-update id:42 status:done```\n" +
 		"**Annuler une de ses propres commandes**\n" +
-		"```/order-cancel id:42```"
+		"```/order-cancel id:42```\n" +
+		"**Afficher les statistiques globales des commandes en cours**\n" +
+		"```/order-stats```\n\n" +
+		"**Attention:** les commandes terminées sont automatiquement supprimées après 15 jours."
 
 	var sb strings.Builder
 	for i, r := range resources {

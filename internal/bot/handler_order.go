@@ -152,7 +152,7 @@ func openOrderModal(s *discordgo.Session, i *discordgo.InteractionCreate, compon
 			Title:    "G.A.L.E.R.E - Nouvelle commande",
 			Components: []discordgo.MessageComponent{
 				textRow("component", "Ressource", "ex. Taranite, Hadanite, Riccite ...", component, true),
-				textRow("quality", "Qualité (0 si ressource sans qualité)", "ex. 750", qual, false),
+				textRow("quality", "Qualité (laisser vide si aucune qualité)", "ex. 750", qual, false),
 				textRow("quantity", "Quantité (cSCU | Unités)", "ex. 150", qty, true),
 			},
 		},
