@@ -111,6 +111,19 @@ func commands() []*discordgo.ApplicationCommand {
 			Description: "Afficher l'aide et la liste des ressources disponibles.",
 		},
 		{
+			Name:        "order-detail",
+			Description: "Afficher tous les détails d'une commande.",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionInteger,
+					Name:        "id",
+					Description: "Identifiant de la commande",
+					Required:    true,
+					MinValue:    floatPtr(1),
+				},
+			},
+		},
+		{
 			Name:        "order-cancel",
 			Description: "Annule une de vos commandes.",
 			Options: []*discordgo.ApplicationCommandOption{

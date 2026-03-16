@@ -32,6 +32,8 @@ func (h *handler) onInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 			h.handleOrders(s, i)
 		case "order-update":
 			h.handleOrderUpdate(s, i)
+		case "order-detail":
+			h.handleOrderDetail(s, i)
 		case "order-cancel":
 			h.handleOrderCancel(s, i)
 		case "order-stats":

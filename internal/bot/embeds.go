@@ -73,6 +73,40 @@ func orderEmbed(o *model.Order) *discordgo.MessageEmbed {
 	}
 }
 
+// orderDetailEmbed builds a full-detail Discord embed for a single order,
+// including the last-updater and exact updated_at timestamp.
+func orderDetailEmbed(o *model.Order) *discordgo.MessageEmbed {
+	fields := []*discordgo.MessageEmbedField{
+		{Name: "Ressource", Value: o.Component, Inline: true},
+		{Name: "Quantité", Value: fmt.Sprintf("%d cSCU", o.Quantity), Inline: true},
+		{Name: "Statut", Value: statusLabel(o.Status), Inline: true},
+		{Name: "Commandé par", Value: fmt.Sprintf("<@%s>", o.CreatorID), Inline: true},
+		{Name: "Créé le", Value: formatTime(o.CreatedAt), Inline: true},
+	}
+
+	if o.MinQuality != "0" && o.MinQuality != "" {
+		fields = append([]*discordgo.MessageEmbedField{
+			fields[0],
+			{Name: "Qualité min.", Value: o.MinQuality, Inline: true},
+		}, fields[1:]...)
+	}
+
+	updater := "—"
+	if o.UpdatedBy != "" {
+		updater = fmt.Sprintf("<@%s>", o.UpdatedBy)
+	}
+	fields = append(fields,
+		&discordgo.MessageEmbedField{Name: "Dernier modificateur", Value: updater, Inline: true},
+		&discordgo.MessageEmbedField{Name: "Dernière mise à jour", Value: formatTime(o.UpdatedAt), Inline: true},
+	)
+
+	return &discordgo.MessageEmbed{
+		Title:  fmt.Sprintf("Commande #%d — détail", o.ID),
+		Color:  statusColor(o.Status),
+		Fields: fields,
+	}
+}
+
 // orderListEmbeds builds one or more Discord embeds for a list of orders.
 // Discord limits: 25 fields per embed, 6000 chars total.
 func orderListEmbeds(orders []model.Order, title string) []*discordgo.MessageEmbed {
