@@ -37,7 +37,7 @@ func commands() []*discordgo.ApplicationCommand {
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "view",
+					Name:        "mode",
 					Description: "Filtrer les commandes affichées",
 					Required:    false,
 					Choices: []*discordgo.ApplicationCommandOptionChoice{
@@ -47,15 +47,16 @@ func commands() []*discordgo.ApplicationCommand {
 					},
 				},
 				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "component",
-					Description: "Filtrer par nom de ressource (insensible à la casse, tous utilisateurs)",
-					Required:    false,
+					Type:         discordgo.ApplicationCommandOptionString,
+					Name:         "component",
+					Description:  "Filtrer par nom de ressource (insensible à la casse, tous utilisateurs)",
+					Required:     false,
+					Autocomplete: true,
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "since",
-					Description: "Filtrer par date de création, ex. 2026-01-15 (tous utilisateurs)",
+					Name:        "older-than",
+					Description: "Filtrer les commandes plus anciennes que cette durée, ex. 7, 7d, 2w, 1mo",
 					Required:    false,
 				},
 			},

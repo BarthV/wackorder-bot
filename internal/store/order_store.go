@@ -21,8 +21,10 @@ type Repository interface {
 	ListAll(ctx context.Context) ([]model.Order, error)
 	SearchByComponent(ctx context.Context, name string) ([]model.Order, error)
 	ListSince(ctx context.Context, since time.Time) ([]model.Order, error)
+	ListBefore(ctx context.Context, before time.Time) ([]model.Order, error)
 	UpdateStatus(ctx context.Context, id int64, newStatus model.Status, updatedBy string) error
 	ListReadyByUpdater(ctx context.Context, updatedBy string) ([]model.Order, error)
+	Prune(ctx context.Context, before time.Time) (int64, error)
 }
 
 // OrderStore is the SQLite implementation of Repository.
@@ -121,6 +123,19 @@ func (s *OrderStore) SearchByComponent(ctx context.Context, name string) ([]mode
 	return scanOrders(rows)
 }
 
+// ListBefore returns all orders created strictly before the given time.
+func (s *OrderStore) ListBefore(ctx context.Context, before time.Time) ([]model.Order, error) {
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id, creator_id, creator_name, component, min_quality, quantity, status,
+		        updated_by, created_at, updated_at
+		 FROM orders WHERE created_at < ? ORDER BY created_at DESC`,
+		before.UTC().Format(time.RFC3339))
+	if err != nil {
+		return nil, fmt.Errorf("list before: %w", err)
+	}
+	return scanOrders(rows)
+}
+
 // ListSince returns all orders created at or after the given time.
 func (s *OrderStore) ListSince(ctx context.Context, since time.Time) ([]model.Order, error) {
 	rows, err := s.db.QueryContext(ctx,
@@ -152,6 +167,18 @@ func (s *OrderStore) UpdateStatus(ctx context.Context, id int64, newStatus model
 		return fmt.Errorf("order %d not found", id)
 	}
 	return nil
+}
+
+// Prune deletes done orders whose updated_at is strictly before the given time.
+// Returns the number of rows deleted.
+func (s *OrderStore) Prune(ctx context.Context, before time.Time) (int64, error) {
+	res, err := s.db.ExecContext(ctx,
+		`DELETE FROM orders WHERE status = 'done' AND updated_at < ?`,
+		before.UTC().Format(time.RFC3339))
+	if err != nil {
+		return 0, fmt.Errorf("prune: %w", err)
+	}
+	return res.RowsAffected()
 }
 
 // ListReadyByUpdater returns all orders with status "ready" last updated by the given Discord user ID.

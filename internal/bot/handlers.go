@@ -18,7 +18,7 @@ func (h *handler) onInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 	switch i.Type {
 	case discordgo.InteractionApplicationCommandAutocomplete:
 		switch i.ApplicationCommandData().Name {
-		case "order":
+		case "order", "order-list":
 			h.handleOrderAutocomplete(s, i)
 		case "order-update":
 			h.handleOrderUpdateAutocomplete(s, i)

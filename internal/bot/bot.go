@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
@@ -10,10 +11,11 @@ import (
 
 // Bot manages the Discord session and command lifecycle.
 type Bot struct {
-	session         *discordgo.Session
+	session        *discordgo.Session
 	corpID         string
-	store           store.Repository
-	registeredCmds  []*discordgo.ApplicationCommand
+	store          store.Repository
+	registeredCmds []*discordgo.ApplicationCommand
+	pruneCancel    context.CancelFunc
 }
 
 // New creates a Bot but does not open the connection yet.
@@ -44,12 +46,19 @@ func (b *Bot) Start() error {
 		slog.Info("command registered", "name", cmd.Name)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	b.pruneCancel = cancel
+	go b.startPruner(ctx)
+
 	slog.Info("wackorder bot is running", "corp_id", b.corpID)
 	return nil
 }
 
-// Stop deregisters commands and closes the Discord session.
+// Stop deregisters commands, stops the pruner, and closes the Discord session.
 func (b *Bot) Stop() error {
+	if b.pruneCancel != nil {
+		b.pruneCancel()
+	}
 	for _, cmd := range b.registeredCmds {
 		if err := b.session.ApplicationCommandDelete(b.session.State.User.ID, b.corpID, cmd.ID); err != nil {
 			slog.Warn("failed to delete command", "name", cmd.Name, "err", err)

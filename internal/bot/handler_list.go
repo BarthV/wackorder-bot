@@ -4,100 +4,121 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/barthv/wackorder-bot/internal/model"
 )
 
 // handleOrders processes the /order-list slash command.
+// All options (mode, component, older-than) are composable and applied as cumulative filters.
 func (h *handler) handleOrders(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	opts := optionMap(i.ApplicationCommandData().Options)
 
-	// /order-list component:<name> — search across all users, ignores view/since
+	// Fetch base set from mode (default: pending).
+	mode := "pending"
+	if modeOpt, ok := opts["mode"]; ok {
+		mode = modeOpt.StringValue()
+	}
+
+	var orders []model.Order
+	var baseTitle string
+	var err error
+
+	switch mode {
+	case "all":
+		orders, err = h.store.ListAll(context.Background())
+		baseTitle = "Toutes les commandes"
+	case "self":
+		caller, ok := requireCallerID(s, i)
+		if !ok {
+			return
+		}
+		orders, err = h.store.ListByCreator(context.Background(), caller)
+		baseTitle = "Mes commandes"
+	default: // "pending"
+		orders, err = h.store.ListPending(context.Background())
+		baseTitle = "Commandes en attente"
+	}
+
+	if err != nil {
+		slog.Error("failed to list orders", "mode", mode, "err", err)
+		respond(s, i, errEmbed("Impossible de lister les commandes. Réessaie plus tard."))
+		return
+	}
+
+	var filterLabels []string
+
+	// Filter by component (case-insensitive substring match).
 	if compOpt, ok := opts["component"]; ok {
 		name := strings.TrimSpace(compOpt.StringValue())
 		if name == "" {
 			respond(s, i, errEmbed("Le nom de la ressource ne peut pas être vide."))
 			return
 		}
-		orders, err := h.store.SearchByComponent(context.Background(), name)
-		if err != nil {
-			slog.Error("SearchByComponent failed", "component", name, "err", err)
-			respond(s, i, errEmbed("Impossible de rechercher les commandes. Réessaie plus tard."))
-			return
+		nameLower := strings.ToLower(name)
+		var filtered []model.Order
+		for _, o := range orders {
+			if strings.Contains(strings.ToLower(o.Component), nameLower) {
+				filtered = append(filtered, o)
+			}
 		}
-		respondEmbeds(s, i, orderListEmbeds(orders, fmt.Sprintf("Commandes correspondant à \"%s\"", name)), discordgo.MessageFlagsEphemeral)
-		return
+		orders = filtered
+		filterLabels = append(filterLabels, name)
 	}
 
-	// /order-list since:<date> — filter by creation date, all users.
-	// Dates are interpreted as midnight UTC.
-	if sinceOpt, ok := opts["since"]; ok {
-		raw := strings.TrimSpace(sinceOpt.StringValue())
-		since, err := parseDate(raw)
+	// Filter by older-than (orders created before now - duration).
+	if olderOpt, ok := opts["older-than"]; ok {
+		raw := strings.TrimSpace(olderOpt.StringValue())
+		days, err := parseDurationDays(raw)
 		if err != nil {
-			respond(s, i, errEmbed("Format de date invalide. Utilise YYYY-MM-DD ou YYYY-MM-DDTHH:MM:SSZ."))
+			respond(s, i, errEmbed("Format de durée invalide. Exemples : 7, 7d, 2w, 1mo."))
 			return
 		}
-		orders, err := h.store.ListSince(context.Background(), since)
-		if err != nil {
-			slog.Error("ListSince failed", "since", raw, "err", err)
-			respond(s, i, errEmbed("Impossible de lister les commandes. Réessaie plus tard."))
-			return
+		before := time.Now().UTC().Add(-time.Duration(days) * 24 * time.Hour)
+		var filtered []model.Order
+		for _, o := range orders {
+			if o.CreatedAt.Before(before) {
+				filtered = append(filtered, o)
+			}
 		}
-		respondEmbeds(s, i, orderListEmbeds(orders, "Commandes depuis le "+raw), discordgo.MessageFlagsEphemeral)
-		return
+		orders = filtered
+		filterLabels = append(filterLabels, ">"+raw)
 	}
 
-	// /order-list [view:<self|pending|all>]
-	// Default value is "pending"
-	view := "pending"
-	if viewOpt, ok := opts["view"]; ok {
-		view = viewOpt.StringValue()
+	title := baseTitle
+	if len(filterLabels) > 0 {
+		title += " — " + strings.Join(filterLabels, ", ")
 	}
-
-	switch view {
-	case "pending":
-		orders, err := h.store.ListPending(context.Background())
-		if err != nil {
-			slog.Error("ListPending failed", "err", err)
-			respond(s, i, errEmbed("Impossible de lister les commandes. Réessaie plus tard."))
-			return
-		}
-		respondEmbeds(s, i, orderListEmbeds(orders, "Commandes en attente"), discordgo.MessageFlagsEphemeral)
-
-	case "all":
-		orders, err := h.store.ListAll(context.Background())
-		if err != nil {
-			slog.Error("ListAll failed", "err", err)
-			respond(s, i, errEmbed("Impossible de lister les commandes. Réessaie plus tard."))
-			return
-		}
-		respondEmbeds(s, i, orderListEmbeds(orders, "Toutes les commandes"), discordgo.MessageFlagsEphemeral)
-
-	default: // "pending"
-		caller, ok := requireCallerID(s, i)
-		if !ok {
-			return
-		}
-		orders, err := h.store.ListByCreator(context.Background(), caller)
-		if err != nil {
-			slog.Error("ListByCreator failed", "caller", caller, "err", err)
-			respond(s, i, errEmbed("Impossible de lister les commandes. Réessaie plus tard."))
-			return
-		}
-		respondEmbeds(s, i, orderListEmbeds(orders, "Mes commandes"), discordgo.MessageFlagsEphemeral)
-	}
+	respondEmbeds(s, i, orderListEmbeds(orders, title), discordgo.MessageFlagsEphemeral)
 }
 
-// parseDate parses a date string in RFC3339 or YYYY-MM-DD (interpreted as midnight UTC) format.
-func parseDate(s string) (time.Time, error) {
-	if t, err := time.Parse(time.RFC3339, s); err == nil {
-		return t, nil
+// parseDurationDays parses a human duration string and returns the equivalent number of days.
+// Supported formats: plain integer (days), Nd (days), Nw (weeks), Nmo (months, 30 days each).
+// Examples: "7", "7d", "2w", "1mo".
+func parseDurationDays(s string) (int, error) {
+	s = strings.ToLower(strings.TrimSpace(s))
+	if s == "" {
+		return 0, fmt.Errorf("empty duration")
 	}
-	if t, err := time.Parse("2006-01-02", s); err == nil {
-		return t.UTC(), nil
+
+	suffixes := map[string]int{"d": 1, "w": 7, "mo": 30}
+	for suffix, multiplier := range suffixes {
+		if strings.HasSuffix(s, suffix) {
+			n, err := strconv.Atoi(strings.TrimSuffix(s, suffix))
+			if err != nil || n <= 0 {
+				return 0, fmt.Errorf("invalid duration %q", s)
+			}
+			return n * multiplier, nil
+		}
 	}
-	return time.Time{}, fmt.Errorf("cannot parse date %q: expected YYYY-MM-DD or RFC3339 (e.g. 2026-01-15 or 2026-01-15T18:00:00Z)", s)
+
+	// Plain integer = days.
+	n, err := strconv.Atoi(s)
+	if err != nil || n <= 0 {
+		return 0, fmt.Errorf("invalid duration %q", s)
+	}
+	return n, nil
 }
