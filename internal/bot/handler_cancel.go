@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/barthv/wackorder-bot/internal/model"
+	"github.com/bwmarrin/discordgo"
 )
 
 // handleOrderCancel processes the /order-cancel slash command.
@@ -43,5 +43,6 @@ func (h *handler) handleOrderCancel(s *discordgo.Session, i *discordgo.Interacti
 	}
 
 	slog.Info("order canceled", "order_id", orderID, "by", caller)
+	logAction(s, h.logChannelID, fmt.Sprintf("#%d %s (%d Q%d) - Annulée par <@%s>", orderID, order.Component, order.Quantity, order.MinQuality, caller))
 	respond(s, i, okEmbed(fmt.Sprintf("Commande #%d annulée.", orderID)))
 }

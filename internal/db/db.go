@@ -37,3 +37,30 @@ func Open(path string) (*sql.DB, error) {
 
 	return db, nil
 }
+
+// InitSchema creates the orders table and indexes if they don't exist yet.
+func InitSchema(db *sql.DB) error {
+	_, err := db.Exec(`
+CREATE TABLE IF NOT EXISTS orders (
+	id           INTEGER PRIMARY KEY AUTOINCREMENT,
+	creator_id   TEXT    NOT NULL,
+	creator_name TEXT    NOT NULL,
+	component    TEXT    NOT NULL,
+	min_quality  INTEGER NOT NULL DEFAULT 0,
+	quantity     INTEGER NOT NULL CHECK (quantity > 0),
+	status       TEXT    NOT NULL DEFAULT 'ordered'
+	             CHECK (status IN ('ordered','ready','done','canceled')),
+	created_at   TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+	updated_at   TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+	updated_by   TEXT    NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_orders_creator_id ON orders(creator_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status     ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_component  ON orders(component COLLATE NOCASE);
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
+`)
+	if err != nil {
+		return fmt.Errorf("init schema: %w", err)
+	}
+	return nil
+}

@@ -21,8 +21,8 @@ func newTestDB(t *testing.T) *sql.DB {
 	}
 	t.Cleanup(func() { database.Close() })
 
-	if err := db.Migrate(database); err != nil {
-		t.Fatalf("migrate: %v", err)
+	if err := db.InitSchema(database); err != nil {
+		t.Fatalf("init schema: %v", err)
 	}
 	return database
 }
@@ -33,7 +33,7 @@ func newTestStore(t *testing.T) store.Repository {
 
 func createOrder(t *testing.T, s store.Repository) int64 {
 	t.Helper()
-	id, err := s.Create(context.Background(), "user1", "Alice", "Shield Generator", "A", 5)
+	id, err := s.Create(context.Background(), "user1", "Alice", "Shield Generator", 0, 5)
 	if err != nil {
 		t.Fatalf("create: %v", err)
 	}
@@ -73,9 +73,9 @@ func TestGetByID_NotFound(t *testing.T) {
 func TestListByCreator(t *testing.T) {
 	s := newTestStore(t)
 
-	s.Create(context.Background(), "user1", "Alice", "Shield", "A", 1)
-	s.Create(context.Background(), "user2", "Bob", "Gun", "B", 2)
-	s.Create(context.Background(), "user1", "Alice", "Armor", "", 3)
+	s.Create(context.Background(), "user1", "Alice", "Shield", 0, 1)
+	s.Create(context.Background(), "user2", "Bob", "Gun", 0, 2)
+	s.Create(context.Background(), "user1", "Alice", "Armor", 0, 3)
 
 	orders, err := s.ListByCreator(context.Background(), "user1")
 	if err != nil {
@@ -89,9 +89,9 @@ func TestListByCreator(t *testing.T) {
 func TestListPending(t *testing.T) {
 	s := newTestStore(t)
 
-	id1, _ := s.Create(context.Background(), "u1", "A", "Part1", "", 1)
-	id2, _ := s.Create(context.Background(), "u2", "B", "Part2", "", 2)
-	s.Create(context.Background(), "u3", "C", "Part3", "", 3)
+	id1, _ := s.Create(context.Background(), "u1", "A", "Part1", 0, 1)
+	id2, _ := s.Create(context.Background(), "u2", "B", "Part2", 0, 2)
+	s.Create(context.Background(), "u3", "C", "Part3", 0, 3)
 
 	// Mark one as done, one as ready.
 	s.UpdateStatus(context.Background(), id1, model.StatusDone, "tester")
@@ -109,8 +109,8 @@ func TestListPending(t *testing.T) {
 
 func TestListAll(t *testing.T) {
 	s := newTestStore(t)
-	s.Create(context.Background(), "u1", "A", "X", "", 1)
-	s.Create(context.Background(), "u2", "B", "Y", "", 2)
+	s.Create(context.Background(), "u1", "A", "X", 0, 1)
+	s.Create(context.Background(), "u2", "B", "Y", 0, 2)
 
 	all, err := s.ListAll(context.Background())
 	if err != nil {
@@ -123,9 +123,9 @@ func TestListAll(t *testing.T) {
 
 func TestSearchByComponent(t *testing.T) {
 	s := newTestStore(t)
-	s.Create(context.Background(), "u1", "A", "Shield Generator", "", 1)
-	s.Create(context.Background(), "u1", "A", "shield gen mk2", "", 1)
-	s.Create(context.Background(), "u2", "B", "Mining Laser", "", 1)
+	s.Create(context.Background(), "u1", "A", "Shield Generator", 0, 1)
+	s.Create(context.Background(), "u1", "A", "shield gen mk2", 0, 1)
+	s.Create(context.Background(), "u2", "B", "Mining Laser", 0, 1)
 
 	results, err := s.SearchByComponent(context.Background(), "shield")
 	if err != nil {
@@ -138,7 +138,7 @@ func TestSearchByComponent(t *testing.T) {
 
 func TestListSince(t *testing.T) {
 	s := newTestStore(t)
-	s.Create(context.Background(), "u1", "A", "Part", "", 1)
+	s.Create(context.Background(), "u1", "A", "Part", 0, 1)
 
 	past := time.Now().Add(-1 * time.Hour)
 	future := time.Now().Add(1 * time.Hour)

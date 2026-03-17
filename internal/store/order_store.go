@@ -14,7 +14,7 @@ import (
 // Repository is the backend-agnostic interface for order persistence.
 // Any storage backend (SQLite, PostgreSQL, in-memory, …) must implement this.
 type Repository interface {
-	Create(ctx context.Context, creatorID, creatorName, component, minQuality string, quantity int) (int64, error)
+	Create(ctx context.Context, creatorID, creatorName, component string, minQuality int, quantity int) (int64, error)
 	GetByID(ctx context.Context, id int64) (*model.Order, error)
 	ListByCreator(ctx context.Context, creatorID string) ([]model.Order, error)
 	ListPending(ctx context.Context) ([]model.Order, error)
@@ -41,7 +41,7 @@ func New(db *sql.DB) *OrderStore {
 var _ Repository = (*OrderStore)(nil)
 
 // Create inserts a new order and returns its assigned ID.
-func (s *OrderStore) Create(ctx context.Context, creatorID, creatorName, component, minQuality string, quantity int) (int64, error) {
+func (s *OrderStore) Create(ctx context.Context, creatorID, creatorName, component string, minQuality int, quantity int) (int64, error) {
 	res, err := s.db.ExecContext(ctx,
 		`INSERT INTO orders (creator_id, creator_name, component, min_quality, quantity)
 		 VALUES (?, ?, ?, ?, ?)`,

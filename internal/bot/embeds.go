@@ -56,10 +56,10 @@ func orderEmbed(o *model.Order) *discordgo.MessageEmbed {
 		{Name: "Créé le", Value: formatTime(o.CreatedAt), Inline: true},
 	}
 
-	if o.MinQuality != "0" && o.MinQuality != "" {
+	if o.MinQuality != 0 {
 		fields = append([]*discordgo.MessageEmbedField{
 			fields[0],
-			{Name: "Qualité min.", Value: o.MinQuality, Inline: true},
+			{Name: "Qualité min.", Value: fmt.Sprintf("%d", o.MinQuality), Inline: true},
 		}, fields[1:]...)
 	}
 
@@ -84,10 +84,10 @@ func orderDetailEmbed(o *model.Order) *discordgo.MessageEmbed {
 		{Name: "Créé le", Value: formatTime(o.CreatedAt), Inline: true},
 	}
 
-	if o.MinQuality != "0" && o.MinQuality != "" {
+	if o.MinQuality != 0 {
 		fields = append([]*discordgo.MessageEmbedField{
 			fields[0],
-			{Name: "Qualité min.", Value: o.MinQuality, Inline: true},
+			{Name: "Qualité min.", Value: fmt.Sprintf("%d", o.MinQuality), Inline: true},
 		}, fields[1:]...)
 	}
 
@@ -133,8 +133,8 @@ func orderListEmbeds(orders []model.Order, title string) []*discordgo.MessageEmb
 		var sb strings.Builder
 		for _, o := range chunk {
 			quality := ""
-			if o.MinQuality != "0" && o.MinQuality != "" {
-				quality = fmt.Sprintf(" - Q%s", o.MinQuality)
+			if o.MinQuality != 0 {
+				quality = fmt.Sprintf(" - Q%d", o.MinQuality)
 			}
 			line := fmt.Sprintf("`#%d` **%s** — %s | %d cSCU%s | <@%s> (%s)\n",
 				o.ID, o.Component, statusLabel(o.Status),

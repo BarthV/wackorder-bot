@@ -28,15 +28,15 @@ func main() {
 	}
 	defer database.Close()
 
-	if err := db.Migrate(database); err != nil {
-		slog.Error("database migration failed", "err", err)
+	if err := db.InitSchema(database); err != nil {
+		slog.Error("database init failed", "err", err)
 		os.Exit(1)
 	}
 	slog.Info("database ready", "path", cfg.DBPath)
 
 	repo := store.New(database)
 
-	b, err := bot.New(cfg.DiscordToken, cfg.CorpID, repo)
+	b, err := bot.New(cfg.DiscordToken, cfg.CorpID, cfg.LogChannelID, repo)
 	if err != nil {
 		slog.Error("failed to create bot", "err", err)
 		os.Exit(1)

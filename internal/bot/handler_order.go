@@ -31,15 +31,20 @@ func (h *handler) handleOrder(s *discordgo.Session, i *discordgo.InteractionCrea
 	quality, hasQual := opts["quality"]
 	quantityOpt, hasQty := opts["quantity"]
 
-	// Component and quantity provided — create directly (quality defaults to "0").
+	// Component and quantity provided — create directly (quality defaults to 0).
 	if hasComp && hasQty {
 		comp := strings.TrimSpace(component.StringValue())
-		qual := "0"
+		qual := 0
 		if hasQual {
-			qual = strings.TrimSpace(quality.StringValue())
+			parsed, err := strconv.Atoi(strings.TrimSpace(quality.StringValue()))
+			if err != nil || parsed < 0 {
+				respond(s, i, errEmbed("La qualité doit être un entier positif ou nul."))
+				return
+			}
+			qual = parsed
 		}
 
-		if err := validateOrderFields(comp, qual); err != nil {
+		if err := validateOrderFields(comp); err != nil {
 			respond(s, i, errEmbed(err.Error()))
 			return
 		}
@@ -56,6 +61,7 @@ func (h *handler) handleOrder(s *discordgo.Session, i *discordgo.InteractionCrea
 			respond(s, i, errEmbed("Impossible de créer la commande. Réessaie plus tard."))
 			return
 		}
+		logAction(s, h.logChannelID, fmt.Sprintf("#%d %s (%d Q%d) - Commandée par <@%s>", id, comp, qty, qual, caller))
 		order, err := h.store.GetByID(context.Background(), id)
 		if err != nil {
 			respond(s, i, okEmbed(fmt.Sprintf("Commande #%d créée.", id)))
@@ -95,13 +101,19 @@ func (h *handler) handleOrderModalSubmit(s *discordgo.Session, i *discordgo.Inte
 
 	component := strings.TrimSpace(fields["component"])
 
-	quality := strings.TrimSpace(fields["quality"])
-	if quality == "" {
-		quality = "0"
+	qualStr := strings.TrimSpace(fields["quality"])
+	qual := 0
+	if qualStr != "" {
+		parsed, err := strconv.Atoi(qualStr)
+		if err != nil || parsed < 0 {
+			respond(s, i, errEmbed("La qualité doit être un entier positif ou nul."))
+			return
+		}
+		qual = parsed
 	}
 	qtyStr := strings.TrimSpace(fields["quantity"])
 
-	if err := validateOrderFields(component, quality); err != nil {
+	if err := validateOrderFields(component); err != nil {
 		respond(s, i, errEmbed(err.Error()))
 		return
 	}
@@ -112,12 +124,13 @@ func (h *handler) handleOrderModalSubmit(s *discordgo.Session, i *discordgo.Inte
 		return
 	}
 
-	id, err := h.store.Create(context.Background(), caller, callerName(i), component, quality, qty)
+	id, err := h.store.Create(context.Background(), caller, callerName(i), component, qual, qty)
 	if err != nil {
 		slog.Error("failed to create order", "by", caller, "err", err)
 		respond(s, i, errEmbed("Impossible de créer la commande. Réessaie plus tard."))
 		return
 	}
+	logAction(s, h.logChannelID, fmt.Sprintf("#%d %s (%d Q%d) - Commandée par <@%s>", id, component, qty, qual, caller))
 
 	order, err := h.store.GetByID(context.Background(), id)
 	if err != nil {
@@ -128,16 +141,13 @@ func (h *handler) handleOrderModalSubmit(s *discordgo.Session, i *discordgo.Inte
 	respondEmbeds(s, i, []*discordgo.MessageEmbed{orderEmbed(order)})
 }
 
-// validateOrderFields checks component and quality field constraints.
-func validateOrderFields(component, quality string) error {
+// validateOrderFields checks component field constraints.
+func validateOrderFields(component string) error {
 	if component == "" {
 		return fmt.Errorf("Le nom de la ressource ne peut pas être vide.")
 	}
 	if !isValidResource(component) {
 		return fmt.Errorf("Ressource inconnue : %q.\nUtilise `/order-help` pour voir la liste des ressources disponibles.", component)
-	}
-	if len(quality) > maxQualityLen {
-		return fmt.Errorf("La qualité ne peut pas dépasser %d caractères.", maxQualityLen)
 	}
 	return nil
 }

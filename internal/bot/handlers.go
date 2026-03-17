@@ -10,7 +10,19 @@ import (
 
 // handler holds shared dependencies for all command handlers.
 type handler struct {
-	store store.Repository
+	store        store.Repository
+	logChannelID string
+}
+
+// logAction sends a compact log message to the configured log channel.
+// It is a no-op if logChannelID is empty.
+func logAction(s *discordgo.Session, channelID, msg string) {
+	if channelID == "" {
+		return
+	}
+	if _, err := s.ChannelMessageSend(channelID, msg); err != nil {
+		slog.Warn("log channel send failed", "err", err)
+	}
 }
 
 // onInteraction is the single entry-point registered with discordgo.

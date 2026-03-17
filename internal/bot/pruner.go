@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 )
@@ -38,5 +39,6 @@ func (b *Bot) runPrune(ctx context.Context) {
 	}
 	if n > 0 {
 		slog.Info("pruned old done orders", "count", n, "older_than", before.Format("2006-01-02"))
+		logAction(b.session, b.logChannelID, fmt.Sprintf("Nettoyages des commandes terminées : %d commandes (>2w)", n))
 	}
 }

@@ -89,7 +89,7 @@ type Order struct {
 	CreatorID   string
 	CreatorName string
 	Component   string
-	MinQuality  string
+	MinQuality  int
 	Quantity    int
 	Status      Status
 	UpdatedBy   string

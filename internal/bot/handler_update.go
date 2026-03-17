@@ -169,6 +169,7 @@ func (h *handler) handleStatusSelect(s *discordgo.Session, i *discordgo.Interact
 	}
 
 	slog.Info("order status updated", "order_id", orderID, "new_status", newStatus, "by", caller)
+	logAction(s, h.logChannelID, fmt.Sprintf("#%d %s (%d Q%d) - Update %s → %s par <@%s>", orderID, order.Component, order.Quantity, order.MinQuality, order.Status, newStatus, caller))
 
 	updated, err := h.store.GetByID(context.Background(), orderID)
 	if err != nil {
@@ -212,6 +213,7 @@ func (h *handler) applyStatusUpdate(s *discordgo.Session, i *discordgo.Interacti
 	}
 
 	slog.Info("order status updated", "order_id", orderID, "new_status", newStatus, "by", caller)
+	logAction(s, h.logChannelID, fmt.Sprintf("#%d %s (%d Q%d) - Update %s → %s par <@%s>", orderID, order.Component, order.Quantity, order.MinQuality, order.Status, newStatus, caller))
 
 	updated, err := h.store.GetByID(context.Background(), orderID)
 	if err != nil {
@@ -261,6 +263,7 @@ func (h *handler) applyAllMyReady(s *discordgo.Session, i *discordgo.Interaction
 	}
 
 	slog.Info("bulk ready update", "new_status", newStatus, "updated", updated, "failed", failed, "by", caller)
+	logAction(s, h.logChannelID, fmt.Sprintf("%d - Update des commandes 'ready' gérées → %s par <@%s>", updated, newStatus, caller))
 
 	msg := fmt.Sprintf("%d commande(s) mises à jour vers **%s**.", updated, statusLabel(newStatus))
 	if failed > 0 {
