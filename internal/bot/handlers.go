@@ -4,14 +4,30 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/barthv/wackorder-bot/internal/store"
+	"github.com/bwmarrin/discordgo"
 )
 
 // handler holds shared dependencies for all command handlers.
 type handler struct {
 	store        store.Repository
 	logChannelID string
+	adminRoleIDs []string
+}
+
+// isAdmin returns true if the interaction caller holds any of the configured admin roles.
+func (h *handler) isAdmin(i *discordgo.InteractionCreate) bool {
+	if i.Member == nil || len(h.adminRoleIDs) == 0 {
+		return false
+	}
+	for _, memberRole := range i.Member.Roles {
+		for _, adminRole := range h.adminRoleIDs {
+			if memberRole == adminRole {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // logAction sends a compact log message to the configured log channel.

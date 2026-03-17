@@ -30,8 +30,9 @@ func (h *handler) handleOrderCancel(s *discordgo.Session, i *discordgo.Interacti
 		return
 	}
 
-	isCreator := order.CreatorID == caller
-	if err := model.ValidateTransition(order.Status, model.StatusCanceled, isCreator); err != nil {
+	ownsOrder := order.CreatorID == caller
+	isAdmin := h.isAdmin(i)
+	if err := model.ValidateTransition(order.Status, model.StatusCanceled, ownsOrder || isAdmin); err != nil {
 		respond(s, i, errEmbed(err.Error()))
 		return
 	}
@@ -43,6 +44,10 @@ func (h *handler) handleOrderCancel(s *discordgo.Session, i *discordgo.Interacti
 	}
 
 	slog.Info("order canceled", "order_id", orderID, "by", caller)
-	logAction(s, h.logChannelID, fmt.Sprintf("#%d %s (%d Q%d) - Annulée par <@%s>", orderID, order.Component, order.Quantity, order.MinQuality, caller))
+	if isAdmin && !ownsOrder {
+		logAction(s, h.logChannelID, fmt.Sprintf("#%d %s (%d Q%d) - Annulée par admin <@%s> (owner: <@%s>)", orderID, order.Component, order.Quantity, order.MinQuality, caller, order.CreatorID))
+	} else {
+		logAction(s, h.logChannelID, fmt.Sprintf("#%d %s (%d Q%d) - Annulée par <@%s>", orderID, order.Component, order.Quantity, order.MinQuality, caller))
+	}
 	respond(s, i, okEmbed(fmt.Sprintf("Commande #%d annulée.", orderID)))
 }

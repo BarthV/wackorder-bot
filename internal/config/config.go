@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 // Config holds all runtime configuration loaded from environment variables.
@@ -13,6 +14,7 @@ type Config struct {
 	LogLevel     string
 	LogFormat    string
 	LogChannelID string
+	AdminRoleIDs []string
 }
 
 // Load reads configuration from environment variables and returns a validated Config.
@@ -42,6 +44,15 @@ func Load() (*Config, error) {
 		logFormat = "text"
 	}
 
+	var adminRoleIDs []string
+	if raw := os.Getenv("ADMIN_ROLE_IDS"); raw != "" {
+		for _, r := range strings.Split(raw, ",") {
+			if r = strings.TrimSpace(r); r != "" {
+				adminRoleIDs = append(adminRoleIDs, r)
+			}
+		}
+	}
+
 	return &Config{
 		DiscordToken: token,
 		CorpID:       corpID,
@@ -49,5 +60,6 @@ func Load() (*Config, error) {
 		LogLevel:     logLevel,
 		LogFormat:    logFormat,
 		LogChannelID: os.Getenv("LOG_CHANNEL_ID"),
+		AdminRoleIDs: adminRoleIDs,
 	}, nil
 }

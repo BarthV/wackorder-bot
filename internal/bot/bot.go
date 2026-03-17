@@ -14,24 +14,25 @@ type Bot struct {
 	session        *discordgo.Session
 	corpID         string
 	logChannelID   string
+	adminRoleIDs   []string
 	store          store.Repository
 	registeredCmds []*discordgo.ApplicationCommand
 	pruneCancel    context.CancelFunc
 }
 
 // New creates a Bot but does not open the connection yet.
-func New(token, corpID, logChannelID string, repo store.Repository) (*Bot, error) {
+func New(token, corpID, logChannelID string, adminRoleIDs []string, repo store.Repository) (*Bot, error) {
 	s, err := discordgo.New("Bot " + token)
 	if err != nil {
 		return nil, fmt.Errorf("create discord session: %w", err)
 	}
 	s.Identify.Intents = discordgo.IntentsNone
-	return &Bot{session: s, corpID: corpID, logChannelID: logChannelID, store: repo}, nil
+	return &Bot{session: s, corpID: corpID, logChannelID: logChannelID, adminRoleIDs: adminRoleIDs, store: repo}, nil
 }
 
 // Start opens the Discord connection and registers slash commands.
 func (b *Bot) Start() error {
-	h := &handler{store: b.store, logChannelID: b.logChannelID}
+	h := &handler{store: b.store, logChannelID: b.logChannelID, adminRoleIDs: b.adminRoleIDs}
 	b.session.AddHandler(h.onInteraction)
 
 	if err := b.session.Open(); err != nil {
