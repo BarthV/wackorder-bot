@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wackorder-bot
+  labels:
+    app.kubernetes.io/name: wackorder-bot
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: wackorder-bot
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: wackorder-bot
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+      containers:
+        - name: wackorder-bot
+          image: wackorder-bot:latest
+          envFrom:
+            - secretRef:
+                name: wackorder-bot
+            - configMapRef:
+                name: wackorder-bot
+          env:
+            - name: DB_PATH
+              value: /data/wackorder.db
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 1
+              memory: 512Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: wackorder-bot-data
