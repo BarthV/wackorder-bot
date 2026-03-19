@@ -15,7 +15,7 @@ func (h *handler) handleOrderHelp(s *discordgo.Session, i *discordgo.Interaction
 		"**3- Marquer la commande comme prise en charge et collectée (minée, récoltée, ...)**\n" +
 		"```/order-update id:42 status:ready```\n" +
 		"**4- Terminer la commande (livraison)**\n" +
-		"```/order-update id:42 status:done (commande unique)\n/order-update mode:my-book status:done (toutes les commandes que j'ai passées 'ready')```\n" +
+		"```/order-update id:42 status:done (commande unique)\n/order-update booked:done (toutes les commandes que j'ai passées 'ready')```\n" +
 		"**Annuler une de ses propres commandes**\n" +
 		"```/order-cancel id:42```\n" +
 		"**Afficher les statistiques globales des commandes en cours**\n" +

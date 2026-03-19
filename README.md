@@ -50,8 +50,8 @@ All `/order-list` responses are ephemeral (visible only to you).
 |---------|-------------|
 | `/order-update id:<n>` | Show an interactive status picker for order `n` |
 | `/order-update id:<n> status:<s>` | Update order `n` directly to status `s` |
-| `/order-update my-book:done` | Mark all your booked (`ready`) orders as done |
-| `/order-update my-book:ordered` | Return all your booked orders to `ordered` |
+| `/order-update booked:done` | Mark all your booked (`ready`) orders as done |
+| `/order-update booked:ordered` | Return all your booked orders to `ordered` |
 
 **Valid status values:** `ready` · `done` · `ordered`
 

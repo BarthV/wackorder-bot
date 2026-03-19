@@ -68,7 +68,7 @@ func commands() []*discordgo.ApplicationCommand {
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "my-book",
+					Name:        "booked",
 					Description: "Mettre à jour toutes les commandes que j'ai passé en 'prêt'",
 					Required:    false,
 					Choices: []*discordgo.ApplicationCommandOptionChoice{

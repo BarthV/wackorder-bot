@@ -47,12 +47,12 @@ func (h *handler) handleOrderUpdateAutocomplete(s *discordgo.Session, i *discord
 }
 
 // handleOrderUpdate processes the /order-update slash command.
-// Priority: my-book > id+status > id alone (string select).
+// Priority: booked > id+status > id alone (string select).
 func (h *handler) handleOrderUpdate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	opts := optionMap(i.ApplicationCommandData().Options)
 
-	// my-book takes precedence over all other options.
-	if allReadyOpt, ok := opts["my-book"]; ok {
+	// booked takes precedence over all other options.
+	if allReadyOpt, ok := opts["booked"]; ok {
 		newStatus, err := model.ParseStatus(allReadyOpt.StringValue())
 		if err != nil {
 			respond(s, i, errEmbed(err.Error()))
@@ -64,7 +64,7 @@ func (h *handler) handleOrderUpdate(s *discordgo.Session, i *discordgo.Interacti
 
 	idOpt, hasID := opts["id"]
 	if !hasID {
-		respond(s, i, errEmbed("Fournis un order ID ou utilise `my-book` pour traiter toutes tes commandes 'ready'."))
+		respond(s, i, errEmbed("Fournis un order ID ou utilise `booked` pour traiter toutes tes commandes 'ready'."))
 		return
 	}
 	orderID := idOpt.IntValue()
@@ -227,7 +227,7 @@ func (h *handler) applyStatusUpdate(s *discordgo.Session, i *discordgo.Interacti
 // Only ready→ordered and ready→done transitions are permitted.
 func (h *handler) applyAllMyReady(s *discordgo.Session, i *discordgo.InteractionCreate, newStatus model.Status) {
 	if newStatus != model.StatusOrdered && newStatus != model.StatusDone {
-		respond(s, i, errEmbed("my-book n'accepte que les statuts 'ordered' ou 'done'."))
+		respond(s, i, errEmbed("booked n'accepte que les statuts 'ordered' ou 'done'."))
 		return
 	}
 
