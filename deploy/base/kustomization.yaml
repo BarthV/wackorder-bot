@@ -17,8 +17,6 @@ configMapGenerator:
   - name: wackorder-bot
     literals:
       - LOG_LEVEL=info
-      - LOG_FORMAT=json
-      - CORP_ID=CHANGE_ME
     options:
       labels:
         app.kubernetes.io/name: wackorder-bot
