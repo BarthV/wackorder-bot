@@ -120,7 +120,7 @@ func orderListEmbeds(orders []model.Order, title string) []*discordgo.MessageEmb
 		}
 	}
 
-	const perEmbed = 20 // keep well under the 25-field limit
+	const perEmbed = 15 // rows per embed to stay within 4096 char limit
 	var embeds []*discordgo.MessageEmbed
 
 	for i := 0; i < len(orders); i += perEmbed {
@@ -131,17 +131,29 @@ func orderListEmbeds(orders []model.Order, title string) []*discordgo.MessageEmb
 		chunk := orders[i:end]
 
 		var sb strings.Builder
+		sb.WriteString("```\n")
+		sb.WriteString(fmt.Sprintf("%-5s %-14s %-10s %7s  %-4s %-12s %s\n",
+			"ID", "Ressource", "Statut", "Qty", "Qual", "Par", "Date"))
+		sb.WriteString(fmt.Sprintf("%-5s %-14s %-10s %7s  %-4s %-12s %s\n",
+			"-----", "--------------", "----------", "-------", "----", "------------", "----------"))
 		for _, o := range chunk {
-			quality := ""
-			if o.MinQuality != 0 {
-				quality = fmt.Sprintf(" - Q%d", o.MinQuality)
+			comp := o.Component
+			if len(comp) > 14 {
+				comp = comp[:13] + "."
 			}
-			line := fmt.Sprintf("`#%d` **%s** — %s | %d cSCU%s | <@%s> (%s)\n",
-				o.ID, o.Component, statusLabel(o.Status),
-				o.Quantity, quality,
-				o.CreatorID, formatDate(o.CreatedAt))
-			sb.WriteString(line)
+			status := statusShort(o.Status)
+			quality := "-"
+			if o.MinQuality != 0 {
+				quality = fmt.Sprintf("%d", o.MinQuality)
+			}
+			creator := o.CreatorName
+			if len(creator) > 12 {
+				creator = creator[:11] + "."
+			}
+			sb.WriteString(fmt.Sprintf("#%-4d %-14s %-10s %7d  %-4s %-12s %s\n",
+				o.ID, comp, status, o.Quantity, quality, creator, formatDate(o.CreatedAt)))
 		}
+		sb.WriteString("```")
 
 		pageTitle := title
 		if len(embeds) > 0 {
@@ -185,6 +197,53 @@ func okEmbed(msg string) *discordgo.InteractionResponseData {
 			},
 		},
 	}
+}
+
+// orderListPlain builds a plain-text message (no embed) for a list of orders.
+func orderListPlain(orders []model.Order, title string) string {
+	if len(orders) == 0 {
+		return fmt.Sprintf("**%s**\n_Aucune commande trouvée._", title)
+	}
+
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("**%s** (%d)\n", title, len(orders)))
+	sb.WriteString("```\n")
+	sb.WriteString(fmt.Sprintf("%-5s %-14s %-10s %7s  %-4s %-12s %s\n",
+		"ID", "Ressource", "Statut", "Qty", "Qual", "Par", "Date"))
+	sb.WriteString(fmt.Sprintf("%-5s %-14s %-10s %7s  %-4s %-12s %s\n",
+		"-----", "--------------", "----------", "-------", "----", "------------", "----------"))
+	for _, o := range orders {
+		comp := o.Component
+		if len(comp) > 14 {
+			comp = comp[:13] + "."
+		}
+		quality := "-"
+		if o.MinQuality != 0 {
+			quality = fmt.Sprintf("%d", o.MinQuality)
+		}
+		creator := o.CreatorName
+		if len(creator) > 12 {
+			creator = creator[:11] + "."
+		}
+		sb.WriteString(fmt.Sprintf("#%-4d %-14s %-10s %7d  %-4s %-12s %s\n",
+			o.ID, comp, statusShort(o.Status), o.Quantity, quality, creator, formatDate(o.CreatedAt)))
+	}
+	sb.WriteString("```")
+	return sb.String()
+}
+
+func statusShort(s model.Status) string {
+	switch s {
+	case model.StatusOrdered:
+		return "ordered"
+	case model.StatusReady:
+		return "ready"
+	case model.StatusDone:
+		return "done"
+	case model.StatusCanceled:
+		return "canceled"
+	}
+	return string(s)
 }
 
 func formatTime(t time.Time) string {

@@ -13,8 +13,9 @@ type Config struct {
 	DBPath       string
 	LogLevel     string
 	LogFormat    string
-	LogChannelID string
-	AdminRoleIDs []string
+	LogChannelID   string
+	RecapChannelID string
+	AdminRoleIDs   []string
 }
 
 // Load reads configuration from environment variables and returns a validated Config.
@@ -59,7 +60,8 @@ func Load() (*Config, error) {
 		DBPath:       dbPath,
 		LogLevel:     logLevel,
 		LogFormat:    logFormat,
-		LogChannelID: os.Getenv("LOG_CHANNEL_ID"),
-		AdminRoleIDs: adminRoleIDs,
+		LogChannelID:   os.Getenv("LOG_CHANNEL_ID"),
+		RecapChannelID: os.Getenv("RECAP_CHANNEL_ID"),
+		AdminRoleIDs:   adminRoleIDs,
 	}, nil
 }

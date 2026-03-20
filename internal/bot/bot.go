@@ -14,20 +14,21 @@ type Bot struct {
 	session        *discordgo.Session
 	corpID         string
 	logChannelID   string
+	recapChannelID string
 	adminRoleIDs   []string
 	store          store.Repository
 	registeredCmds []*discordgo.ApplicationCommand
-	pruneCancel    context.CancelFunc
+	bgCancel       context.CancelFunc
 }
 
 // New creates a Bot but does not open the connection yet.
-func New(token, corpID, logChannelID string, adminRoleIDs []string, repo store.Repository) (*Bot, error) {
+func New(token, corpID, logChannelID, recapChannelID string, adminRoleIDs []string, repo store.Repository) (*Bot, error) {
 	s, err := discordgo.New("Bot " + token)
 	if err != nil {
 		return nil, fmt.Errorf("create discord session: %w", err)
 	}
 	s.Identify.Intents = discordgo.IntentsNone
-	return &Bot{session: s, corpID: corpID, logChannelID: logChannelID, adminRoleIDs: adminRoleIDs, store: repo}, nil
+	return &Bot{session: s, corpID: corpID, logChannelID: logChannelID, recapChannelID: recapChannelID, adminRoleIDs: adminRoleIDs, store: repo}, nil
 }
 
 // Start opens the Discord connection and registers slash commands.
@@ -49,8 +50,9 @@ func (b *Bot) Start() error {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	b.pruneCancel = cancel
+	b.bgCancel = cancel
 	go b.startPruner(ctx)
+	go b.startRecap(ctx)
 
 	slog.Info("wackorder bot is running", "corp_id", b.corpID)
 	return nil
@@ -58,8 +60,8 @@ func (b *Bot) Start() error {
 
 // Stop deregisters commands, stops the pruner, and closes the Discord session.
 func (b *Bot) Stop() error {
-	if b.pruneCancel != nil {
-		b.pruneCancel()
+	if b.bgCancel != nil {
+		b.bgCancel()
 	}
 	for _, cmd := range b.registeredCmds {
 		if err := b.session.ApplicationCommandDelete(b.session.State.User.ID, b.corpID, cmd.ID); err != nil {

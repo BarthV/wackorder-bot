@@ -24,6 +24,7 @@ type Repository interface {
 	ListBefore(ctx context.Context, before time.Time) ([]model.Order, error)
 	UpdateStatus(ctx context.Context, id int64, newStatus model.Status, updatedBy string) error
 	ListReadyByUpdater(ctx context.Context, updatedBy string) ([]model.Order, error)
+	ListDone(ctx context.Context) ([]model.Order, error)
 	Prune(ctx context.Context, before time.Time) (int64, error)
 }
 
@@ -189,6 +190,18 @@ func (s *OrderStore) ListReadyByUpdater(ctx context.Context, updatedBy string) (
 		 FROM orders WHERE status = 'ready' AND updated_by = ? ORDER BY created_at ASC`, updatedBy)
 	if err != nil {
 		return nil, fmt.Errorf("list ready by updater: %w", err)
+	}
+	return scanOrders(rows)
+}
+
+// ListDone returns all orders with status "done".
+func (s *OrderStore) ListDone(ctx context.Context) ([]model.Order, error) {
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id, creator_id, creator_name, component, min_quality, quantity, status,
+		        updated_by, created_at, updated_at
+		 FROM orders WHERE status = 'done' ORDER BY updated_at DESC`)
+	if err != nil {
+		return nil, fmt.Errorf("list done: %w", err)
 	}
 	return scanOrders(rows)
 }

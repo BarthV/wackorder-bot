@@ -99,7 +99,10 @@ func (h *handler) handleOrders(s *discordgo.Session, i *discordgo.InteractionCre
 	if len(filterLabels) > 0 {
 		title += " — " + strings.Join(filterLabels, ", ")
 	}
-	respondEmbeds(s, i, orderListEmbeds(orders, title), discordgo.MessageFlagsEphemeral)
+	respond(s, i, &discordgo.InteractionResponseData{
+		Content: orderListPlain(orders, title),
+		Flags:   discordgo.MessageFlagsEphemeral,
+	})
 }
 
 // parseDurationDays parses a human duration string and returns the equivalent number of days.
