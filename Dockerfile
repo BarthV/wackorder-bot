@@ -1,11 +1,14 @@
 # Build stage
-FROM golang:1.26-bookworm AS build
+FROM --platform=$BUILDPLATFORM golang:1.26-bookworm AS build
+
+ARG TARGETOS
+ARG TARGETARCH
 
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /wackorder ./cmd/wackorder
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags="-s -w" -o /wackorder ./cmd/wackorder
 
 # Runtime stage — minimal distroless image, no shell
 FROM gcr.io/distroless/static-debian12:nonroot
