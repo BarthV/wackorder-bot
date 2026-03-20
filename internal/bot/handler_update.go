@@ -169,7 +169,7 @@ func (h *handler) handleStatusSelect(s *discordgo.Session, i *discordgo.Interact
 	}
 
 	slog.Info("order status updated", "order_id", orderID, "new_status", newStatus, "by", caller)
-	logAction(s, h.logChannelID, fmt.Sprintf("#%d %s ( %d Q%d ) - Change de statut %s → %s par <@%s>", orderID, order.Component, order.Quantity, order.MinQuality, order.Status, newStatus, caller))
+	logAction(s, h.logChannelID, fmt.Sprintf("#%d %s ( x%d Q%d ) - Change de statut %s → %s par <@%s>", orderID, order.Component, order.Quantity, order.MinQuality, order.Status, newStatus, caller))
 
 	updated, err := h.store.GetByID(context.Background(), orderID)
 	if err != nil {
@@ -213,7 +213,7 @@ func (h *handler) applyStatusUpdate(s *discordgo.Session, i *discordgo.Interacti
 	}
 
 	slog.Info("order status updated", "order_id", orderID, "new_status", newStatus, "by", caller)
-	logAction(s, h.logChannelID, fmt.Sprintf("#%d %s ( %d Q%d ) - Change de statut %s → %s par <@%s>", orderID, order.Component, order.Quantity, order.MinQuality, order.Status, newStatus, caller))
+	logAction(s, h.logChannelID, fmt.Sprintf("#%d %s ( x%d Q%d ) - Change de statut %s → %s par <@%s>", orderID, order.Component, order.Quantity, order.MinQuality, order.Status, newStatus, caller))
 
 	updated, err := h.store.GetByID(context.Background(), orderID)
 	if err != nil {

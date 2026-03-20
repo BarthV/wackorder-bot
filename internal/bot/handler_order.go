@@ -63,7 +63,7 @@ func (h *handler) handleOrder(s *discordgo.Session, i *discordgo.InteractionCrea
 			respond(s, i, errEmbed("Impossible de créer la commande. Réessaie plus tard."))
 			return
 		}
-		logAction(s, h.logChannelID, fmt.Sprintf("#%d %s ( %d Q%d ) - Commandée par <@%s>", id, comp, qty, qual, caller))
+		logAction(s, h.logChannelID, fmt.Sprintf("#%d %s ( x%d Q%d ) - Commandée par <@%s>", id, comp, qty, qual, caller))
 		order, err := h.store.GetByID(context.Background(), id)
 		if err != nil {
 			respond(s, i, okEmbed(fmt.Sprintf("Commande #%d créée.", id)))
@@ -134,7 +134,7 @@ func (h *handler) handleOrderModalSubmit(s *discordgo.Session, i *discordgo.Inte
 		respond(s, i, errEmbed("Impossible de créer la commande. Réessaie plus tard."))
 		return
 	}
-	logAction(s, h.logChannelID, fmt.Sprintf("#%d %s ( %d Q%d ) - Commandée par <@%s>", id, component, qty, qual, caller))
+	logAction(s, h.logChannelID, fmt.Sprintf("#%d %s ( x%d Q%d ) - Commandée par <@%s>", id, component, qty, qual, caller))
 
 	order, err := h.store.GetByID(context.Background(), id)
 	if err != nil {
