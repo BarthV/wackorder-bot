@@ -53,13 +53,13 @@ func orderEmbed(o *model.Order) *discordgo.MessageEmbed {
 		{Name: "Quantité", Value: fmt.Sprintf("%d cSCU", o.Quantity), Inline: true},
 		{Name: "Statut", Value: statusLabel(o.Status), Inline: true},
 		{Name: "Commandé par", Value: fmt.Sprintf("<@%s>", o.CreatorID), Inline: true},
-		{Name: "Créé le", Value: formatTime(o.CreatedAt), Inline: true},
+		// {Name: "Créé le", Value: formatTime(o.CreatedAt), Inline: true},
 	}
 
 	if o.MinQuality != 0 {
 		fields = append([]*discordgo.MessageEmbedField{
 			fields[0],
-			{Name: "Qualité min.", Value: fmt.Sprintf("%d", o.MinQuality), Inline: true},
+			{Name: "Qualité", Value: fmt.Sprintf("%d", o.MinQuality), Inline: true},
 		}, fields[1:]...)
 	}
 
@@ -67,9 +67,9 @@ func orderEmbed(o *model.Order) *discordgo.MessageEmbed {
 		Title:  fmt.Sprintf("Commande #%d", o.ID),
 		Color:  statusColor(o.Status),
 		Fields: fields,
-		Footer: &discordgo.MessageEmbedFooter{
-			Text: fmt.Sprintf("Mis à jour : %s", formatTime(o.UpdatedAt)),
-		},
+		// Footer: &discordgo.MessageEmbedFooter{
+		// 	Text: fmt.Sprintf("Mis à jour : %s", formatTime(o.UpdatedAt)),
+		// },
 	}
 }
 
@@ -87,7 +87,7 @@ func orderDetailEmbed(o *model.Order) *discordgo.MessageEmbed {
 	if o.MinQuality != 0 {
 		fields = append([]*discordgo.MessageEmbedField{
 			fields[0],
-			{Name: "Qualité min.", Value: fmt.Sprintf("%d", o.MinQuality), Inline: true},
+			{Name: "Qualité", Value: fmt.Sprintf("%d", o.MinQuality), Inline: true},
 		}, fields[1:]...)
 	}
 

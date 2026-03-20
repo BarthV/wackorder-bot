@@ -15,10 +15,10 @@ var resources = []string{
 	"Beryl",
 	"Bexalite",
 	"Borase",
-	"Cobalt",
+	// "Cobalt",
 	"Copper",
 	"Corundum",
-	"Diamond",
+	// "Diamond",
 	"Dolivine",
 	"Feynmaline",
 	"Glacosite",
@@ -65,15 +65,16 @@ func (h *handler) handleOrderAutocomplete(s *discordgo.Session, i *discordgo.Int
 	})
 }
 
-// isValidResource reports whether name exactly matches a resource (case-insensitive).
-func isValidResource(name string) bool {
+// canonicalResource returns the canonical (enum) resource name for any case-insensitive match.
+// The second return value is false if no match is found.
+func canonicalResource(name string) (string, bool) {
 	name = strings.ToLower(strings.TrimSpace(name))
 	for _, r := range resources {
 		if strings.ToLower(r) == name {
-			return true
+			return r, true
 		}
 	}
-	return false
+	return "", false
 }
 
 // filterResources returns up to 25 resources whose name contains the query (case-insensitive).

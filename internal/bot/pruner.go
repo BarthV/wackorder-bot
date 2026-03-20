@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-const pruneRetention = 14 * 24 * time.Hour // 2 weeks
+const pruneRetention = 7 * 24 * time.Hour // 1 week
 
 // startPruner runs an immediate prune then repeats daily at midnight UTC.
 // It returns when ctx is cancelled.
@@ -39,6 +39,6 @@ func (b *Bot) runPrune(ctx context.Context) {
 	}
 	if n > 0 {
 		slog.Info("pruned old done orders", "count", n, "older_than", before.Format("2006-01-02"))
-		logAction(b.session, b.logChannelID, fmt.Sprintf("Nettoyages des commandes terminées : %d commandes (>2w)", n))
+		logAction(b.session, b.logChannelID, fmt.Sprintf("Nettoyages des commandes terminées : %d commandes (>1w)", n))
 	}
 }

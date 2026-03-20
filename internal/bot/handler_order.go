@@ -44,10 +44,12 @@ func (h *handler) handleOrder(s *discordgo.Session, i *discordgo.InteractionCrea
 			qual = parsed
 		}
 
-		if err := validateOrderFields(comp); err != nil {
+		canonical, err := validateOrderFields(comp)
+		if err != nil {
 			respond(s, i, errEmbed(err.Error()))
 			return
 		}
+		comp = canonical
 
 		qty := int(quantityOpt.IntValue())
 		if qty <= 0 {
@@ -113,10 +115,12 @@ func (h *handler) handleOrderModalSubmit(s *discordgo.Session, i *discordgo.Inte
 	}
 	qtyStr := strings.TrimSpace(fields["quantity"])
 
-	if err := validateOrderFields(component); err != nil {
+	canonical, err := validateOrderFields(component)
+	if err != nil {
 		respond(s, i, errEmbed(err.Error()))
 		return
 	}
+	component = canonical
 
 	qty, err := strconv.Atoi(qtyStr)
 	if err != nil || qty <= 0 {
@@ -141,15 +145,16 @@ func (h *handler) handleOrderModalSubmit(s *discordgo.Session, i *discordgo.Inte
 	respondEmbeds(s, i, []*discordgo.MessageEmbed{orderEmbed(order)})
 }
 
-// validateOrderFields checks component field constraints.
-func validateOrderFields(component string) error {
+// validateOrderFields checks component field constraints and returns the canonical resource name.
+func validateOrderFields(component string) (string, error) {
 	if component == "" {
-		return fmt.Errorf("Le nom de la ressource ne peut pas être vide.")
+		return "", fmt.Errorf("Le nom de la ressource ne peut pas être vide.")
 	}
-	if !isValidResource(component) {
-		return fmt.Errorf("Ressource inconnue : %q.\nUtilise `/order-help` pour voir la liste des ressources disponibles.", component)
+	canonical, ok := canonicalResource(component)
+	if !ok {
+		return "", fmt.Errorf("Ressource inconnue : %q.\nUtilise `/order-help` pour voir la liste des ressources disponibles.", component)
 	}
-	return nil
+	return canonical, nil
 }
 
 // openOrderModal opens the order creation modal with component encoded in the CustomID.

@@ -4,27 +4,32 @@ import (
 	"testing"
 )
 
-func TestIsValidResource(t *testing.T) {
+func TestCanonicalResource(t *testing.T) {
 	tests := []struct {
-		name  string
-		input string
-		want  bool
+		name      string
+		input     string
+		wantName  string
+		wantFound bool
 	}{
-		{"exact match", "Gold", true},
-		{"lowercase", "gold", true},
-		{"uppercase", "GOLD", true},
-		{"with spaces", "Raw Ice", true},
-		{"trimmed", "  Gold  ", true},
-		{"invalid", "Unobtanium", false},
-		{"empty", "", false},
-		{"partial", "Gol", false},
-		{"prefix match only", "Gold Mine", false},
+		{"exact match", "Gold", "Gold", true},
+		{"lowercase", "gold", "Gold", true},
+		{"uppercase", "GOLD", "Gold", true},
+		{"with spaces", "Raw Ice", "Raw Ice", true},
+		{"trimmed", "  Gold  ", "Gold", true},
+		{"invalid", "Unobtanium", "", false},
+		{"empty", "", "", false},
+		{"partial", "Gol", "", false},
+		{"prefix match only", "Gold Mine", "", false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := isValidResource(tt.input); got != tt.want {
-				t.Errorf("isValidResource(%q) = %v, want %v", tt.input, got, tt.want)
+			got, ok := canonicalResource(tt.input)
+			if ok != tt.wantFound {
+				t.Errorf("canonicalResource(%q) found=%v, want %v", tt.input, ok, tt.wantFound)
+			}
+			if got != tt.wantName {
+				t.Errorf("canonicalResource(%q) = %q, want %q", tt.input, got, tt.wantName)
 			}
 		})
 	}
