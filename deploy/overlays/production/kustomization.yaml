@@ -11,6 +11,15 @@ images:
     newName: ghcr.io/barthv/wackorder-bot
     newTag: latest
 
+patches:
+  - target:
+      kind: Deployment
+      name: wackorder-bot
+    patch: |
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+
 configMapGenerator:
   - name: wackorder-bot
     behavior: merge

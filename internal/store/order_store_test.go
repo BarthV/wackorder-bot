@@ -208,3 +208,154 @@ func TestValidateTransition_InvalidForward(t *testing.T) {
 		t.Error("done → ordered should be invalid")
 	}
 }
+
+func TestListBefore(t *testing.T) {
+	s := newTestStore(t)
+	s.Create(context.Background(), "u1", "A", "Part", 0, 1)
+
+	future := time.Now().Add(1 * time.Hour)
+	past := time.Now().Add(-1 * time.Hour)
+
+	results, err := s.ListBefore(context.Background(), future)
+	if err != nil {
+		t.Fatalf("ListBefore(future): %v", err)
+	}
+	if len(results) != 1 {
+		t.Errorf("expected 1 result before future, got %d", len(results))
+	}
+
+	results, err = s.ListBefore(context.Background(), past)
+	if err != nil {
+		t.Fatalf("ListBefore(past): %v", err)
+	}
+	if len(results) != 0 {
+		t.Errorf("expected 0 results before past, got %d", len(results))
+	}
+}
+
+func TestListReadyByUpdater(t *testing.T) {
+	s := newTestStore(t)
+
+	id1, _ := s.Create(context.Background(), "u1", "A", "Part1", 0, 1)
+	id2, _ := s.Create(context.Background(), "u2", "B", "Part2", 0, 2)
+	id3, _ := s.Create(context.Background(), "u3", "C", "Part3", 0, 3)
+
+	// Mark orders ready by different updaters.
+	s.UpdateStatus(context.Background(), id1, model.StatusReady, "handler1")
+	s.UpdateStatus(context.Background(), id2, model.StatusReady, "handler1")
+	s.UpdateStatus(context.Background(), id3, model.StatusReady, "handler2")
+
+	results, err := s.ListReadyByUpdater(context.Background(), "handler1")
+	if err != nil {
+		t.Fatalf("ListReadyByUpdater: %v", err)
+	}
+	if len(results) != 2 {
+		t.Errorf("expected 2 ready orders for handler1, got %d", len(results))
+	}
+
+	results, err = s.ListReadyByUpdater(context.Background(), "handler2")
+	if err != nil {
+		t.Fatalf("ListReadyByUpdater: %v", err)
+	}
+	if len(results) != 1 {
+		t.Errorf("expected 1 ready order for handler2, got %d", len(results))
+	}
+
+	results, err = s.ListReadyByUpdater(context.Background(), "nobody")
+	if err != nil {
+		t.Fatalf("ListReadyByUpdater: %v", err)
+	}
+	if len(results) != 0 {
+		t.Errorf("expected 0 ready orders for nobody, got %d", len(results))
+	}
+}
+
+func TestPrune(t *testing.T) {
+	s := newTestStore(t)
+
+	id1, _ := s.Create(context.Background(), "u1", "A", "Part1", 0, 1)
+	id2, _ := s.Create(context.Background(), "u2", "B", "Part2", 0, 2)
+	id3, _ := s.Create(context.Background(), "u3", "C", "Part3", 0, 3)
+
+	// Mark id1 and id2 as done, leave id3 as ordered.
+	s.UpdateStatus(context.Background(), id1, model.StatusDone, "tester")
+	s.UpdateStatus(context.Background(), id2, model.StatusDone, "tester")
+
+	// Prune with a future cutoff — should delete both done orders.
+	future := time.Now().Add(1 * time.Hour)
+	count, err := s.Prune(context.Background(), future)
+	if err != nil {
+		t.Fatalf("Prune: %v", err)
+	}
+	if count != 2 {
+		t.Errorf("expected 2 pruned, got %d", count)
+	}
+
+	// Ordered order should still exist.
+	all, _ := s.ListAll(context.Background())
+	if len(all) != 1 {
+		t.Errorf("expected 1 remaining order, got %d", len(all))
+	}
+	if all[0].ID != id3 {
+		t.Errorf("expected remaining order to be id3=%d, got %d", id3, all[0].ID)
+	}
+}
+
+func TestPrune_DoesNotDeleteRecentDone(t *testing.T) {
+	s := newTestStore(t)
+
+	id, _ := s.Create(context.Background(), "u1", "A", "Part", 0, 1)
+	s.UpdateStatus(context.Background(), id, model.StatusDone, "tester")
+
+	// Prune with a past cutoff — should not delete the recent done order.
+	past := time.Now().Add(-1 * time.Hour)
+	count, err := s.Prune(context.Background(), past)
+	if err != nil {
+		t.Fatalf("Prune: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("expected 0 pruned with past cutoff, got %d", count)
+	}
+}
+
+func TestUpdateStatus_SetsUpdatedBy(t *testing.T) {
+	s := newTestStore(t)
+	id := createOrder(t, s)
+
+	if err := s.UpdateStatus(context.Background(), id, model.StatusReady, "handler42"); err != nil {
+		t.Fatalf("UpdateStatus: %v", err)
+	}
+
+	o, _ := s.GetByID(context.Background(), id)
+	if o.UpdatedBy != "handler42" {
+		t.Errorf("expected UpdatedBy=handler42, got %q", o.UpdatedBy)
+	}
+	if o.UpdatedAt.IsZero() {
+		t.Error("UpdatedAt should not be zero after update")
+	}
+}
+
+func TestSearchByComponent_SpecialChars(t *testing.T) {
+	s := newTestStore(t)
+	s.Create(context.Background(), "u1", "A", "100% Pure Gold", 0, 1)
+	s.Create(context.Background(), "u1", "A", "Shield_Gen", 0, 1)
+	s.Create(context.Background(), "u1", "A", "Normal Item", 0, 1)
+
+	// Search for "%" — should match only the order containing "%"
+	results, err := s.SearchByComponent(context.Background(), "%")
+	if err != nil {
+		t.Fatalf("SearchByComponent(%%): %v", err)
+	}
+	if len(results) != 1 {
+		t.Errorf("expected 1 result for '%%', got %d", len(results))
+	}
+
+	// Search for "_" — should match only the order containing "_"
+	results, err = s.SearchByComponent(context.Background(), "_")
+	if err != nil {
+		t.Fatalf("SearchByComponent(_): %v", err)
+	}
+	if len(results) != 1 {
+		t.Errorf("expected 1 result for '_', got %d", len(results))
+	}
+}
