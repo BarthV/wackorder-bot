@@ -3,8 +3,6 @@ kind: Kustomization
 
 resources:
   - ../../base
-  - flux-kustomization.yaml
-  - gitrepository.yaml
 
 images:
   - name: wackorder-bot
