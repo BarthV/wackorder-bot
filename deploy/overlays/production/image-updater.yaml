@@ -55,19 +55,19 @@ spec:
                 - /bin/sh
                 - -ce
                 - |
-                  LATEST=$(/tools/kubectl get imagepolicy wackorder-bot -o jsonpath='{.status.latestImage}')
+                  LATEST=$(kubectl get imagepolicy wackorder-bot -o jsonpath='{.status.latestImage}')
                   if [ -z "$LATEST" ]; then
                     echo "WARNING: no latestImage in ImagePolicy status"
                     exit 0
                   fi
-                  CURRENT=$(/tools/kubectl get deployment wackorder-bot -o jsonpath='{.spec.template.spec.containers[0].image}')
+                  CURRENT=$(kubectl get deployment wackorder-bot -o jsonpath='{.spec.template.spec.containers[0].image}')
                   if [ "$CURRENT" = "$LATEST" ]; then
                     echo "Image already up to date: $CURRENT"
                     exit 0
                   fi
                   echo "Updating image: $CURRENT -> $LATEST"
                   printf '{"apiVersion":"apps/v1","kind":"Deployment","metadata":{"name":"wackorder-bot"},"spec":{"template":{"spec":{"containers":[{"name":"wackorder-bot","image":"%s"}]}}}}' "$LATEST" \
-                    | /tools/kubectl apply --server-side --force-conflicts --field-manager=image-updater -f -
+                    | kubectl apply --server-side --force-conflicts --field-manager=image-updater -f -
               resources:
                 requests:
                   cpu: 10m
