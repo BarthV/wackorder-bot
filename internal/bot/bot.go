@@ -40,12 +40,12 @@ func (b *Bot) Start() error {
 		return fmt.Errorf("open discord session: %w", err)
 	}
 
-	for _, cmd := range commands() {
-		registered, err := b.session.ApplicationCommandCreate(b.session.State.User.ID, b.corpID, cmd)
-		if err != nil {
-			return fmt.Errorf("register command %q: %w", cmd.Name, err)
-		}
-		b.registeredCmds = append(b.registeredCmds, registered)
+	registered, err := b.session.ApplicationCommandBulkOverwrite(b.session.State.User.ID, b.corpID, commands())
+	if err != nil {
+		return fmt.Errorf("register commands: %w", err)
+	}
+	b.registeredCmds = registered
+	for _, cmd := range registered {
 		slog.Info("command registered", "name", cmd.Name)
 	}
 
