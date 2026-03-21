@@ -12,4 +12,9 @@ spec:
   prune: true
   targetNamespace: wackorder-dev
   postBuild:
-    substitute: {}
+    substitute:
+      WACKORDER_BOT_IMAGE_TAG: set-by-autoupdater
+    substituteFrom:
+      - kind: ConfigMap
+        name: wackorder-dev-image-vars
+        optional: true

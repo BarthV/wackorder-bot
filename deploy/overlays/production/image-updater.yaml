@@ -8,9 +8,6 @@ kind: Role
 metadata:
   name: image-updater
 rules:
-  - apiGroups: ["apps"]
-    resources: ["deployments"]
-    verbs: ["get", "patch"]
   - apiGroups: ["image.toolkit.fluxcd.io"]
     resources: ["imagepolicies"]
     verbs: ["get"]
@@ -26,6 +23,32 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: image-updater
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: wackorder-image-updater-configmap-writer
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["wackorder-image-vars"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: wackorder-image-updater-configmap-writer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: wackorder-image-updater-configmap-writer
+subjects:
+  - kind: ServiceAccount
+    name: image-updater
+    namespace: wackorder
 ---
 apiVersion: batch/v1
 kind: CronJob
@@ -56,19 +79,21 @@ spec:
                 - /bin/sh
                 - -ce
                 - |
-                  LATEST=$(kubectl get imagepolicy wackorder-bot -o jsonpath='{.status.latestRef.name}:{.status.latestRef.tag}')
-                  if [ -z "$LATEST" ]; then
+                  LATEST_TAG=$(kubectl get imagepolicy wackorder-bot -o jsonpath='{.status.latestRef.tag}')
+                  if [ -z "$LATEST_TAG" ]; then
                     echo "WARNING: no latestRef in ImagePolicy status"
                     exit 1
                   fi
-                  CURRENT=$(kubectl get deployment wackorder-bot -o jsonpath='{.spec.template.spec.containers[0].image}')
-                  if [ "$CURRENT" = "$LATEST" ]; then
-                    echo "Image already up to date: $CURRENT"
+                  CURRENT=$(kubectl get configmap wackorder-image-vars -n flux-system -o jsonpath='{.data.WACKORDER_BOT_IMAGE_TAG}' 2>/dev/null || echo "")
+                  if [ "$CURRENT" = "$LATEST_TAG" ]; then
+                    echo "Tag already up to date: $LATEST_TAG"
                     exit 0
                   fi
-                  echo "Updating image: $CURRENT -> $LATEST"
-                  printf '{"apiVersion":"apps/v1","kind":"Deployment","metadata":{"name":"wackorder-bot"},"spec":{"template":{"spec":{"containers":[{"name":"wackorder-bot","image":"%s"}]}}}}' "$LATEST" \
-                    | kubectl apply --server-side --force-conflicts --field-manager=image-updater -f -
+                  echo "Updating image tag: $CURRENT -> $LATEST_TAG"
+                  kubectl create configmap wackorder-image-vars \
+                    --namespace=flux-system \
+                    --from-literal=WACKORDER_BOT_IMAGE_TAG="$LATEST_TAG" \
+                    --dry-run=client -o yaml | kubectl apply -f -
               resources:
                 requests:
                   cpu: 10m
