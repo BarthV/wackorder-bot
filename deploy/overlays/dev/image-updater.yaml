@@ -98,7 +98,7 @@ spec:
                   fi
                   echo "Updating image tag: $CURRENT -> $SHA"
                   printf '{"apiVersion":"v1","kind":"ConfigMap","metadata":{"name":"wackorder-dev-image-vars","namespace":"flux-system","labels":{"reconcile.fluxcd.io/watch":"Enabled"}},"data":{"WACKORDER_BOT_IMAGE_TAG":"%s"}}' "$SHA" \
-                    | kubectl apply --server-side -f -
+                    | kubectl apply --force-conflict --server-side -f -
               resources:
                 requests:
                   cpu: 10m

@@ -11,11 +11,16 @@ images:
     newName: ghcr.io/barthv/wackorder-bot
     newTag: ${WACKORDER_BOT_IMAGE_TAG:-set-by-autoupdater}
 
+replicas:
+  - name: wackorder-bot
+    count: 0
+
 configMapGenerator:
   - name: wackorder-bot
     behavior: merge
     literals:
       - LOG_LEVEL=info
       - LOG_CHANNEL_ID=1483550466942963954
+      - RECAP_CHANNEL_ID=1482669834503454854
       - ADMIN_ROLE_IDS=1483588423749996564
       - CORP_ID=1482661212977234113
