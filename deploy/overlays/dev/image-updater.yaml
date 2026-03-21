@@ -75,6 +75,11 @@ spec:
                 - /bin/sh
                 - -ce
                 - |
+                  READY=$(kubectl get gitrepository wackorder -n flux-system -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}')
+                  if [ "$READY" != "True" ]; then
+                    echo "ERROR: GitRepository wackorder is not ready (Ready=$READY)"
+                    exit 1
+                  fi
                   REVISION=$(kubectl get gitrepository wackorder -n flux-system -o jsonpath='{.status.artifact.revision}')
                   if [ -z "$REVISION" ]; then
                     echo "WARNING: no revision in GitRepository status"
@@ -88,7 +93,7 @@ spec:
                     exit 0
                   fi
                   echo "Updating image: $CURRENT -> $LATEST"
-                  printf '{"apiVersion":"apps/v1","kind":"Deployment","metadata":{"name":"wackorder-bot"},"spec":{"template":{"spec":{"containers":[{"name":"wackorder-bot","image":"%s"}]}}}}' "$SHA" "$LATEST" \
+                  printf '{"apiVersion":"apps/v1","kind":"Deployment","metadata":{"name":"wackorder-bot"},"spec":{"template":{"spec":{"containers":[{"name":"wackorder-bot","image":"%s"}]}}}}' "$LATEST" \
                     | kubectl apply --server-side --force-conflicts --field-manager=image-updater -f -
               resources:
                 requests:
