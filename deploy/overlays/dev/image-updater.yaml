@@ -11,9 +11,6 @@ rules:
   - apiGroups: ["apps"]
     resources: ["deployments"]
     verbs: ["get", "patch"]
-  - apiGroups: ["image.toolkit.fluxcd.io"]
-    resources: ["imagepolicies"]
-    verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -27,6 +24,28 @@ subjects:
   - kind: ServiceAccount
     name: image-updater
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: wackorder-image-updater-gitrepository-reader
+rules:
+  - apiGroups: ["source.toolkit.fluxcd.io"]
+    resources: ["gitrepositories"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: wackorder-image-updater-gitrepository-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: wackorder-image-updater-gitrepository-reader
+subjects:
+  - kind: ServiceAccount
+    name: image-updater
+    namespace: wackorder
+---
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -34,7 +53,7 @@ metadata:
 spec:
   schedule: "*/5 * * * *"
   successfulJobsHistoryLimit: 1
-  failedJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 3
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
@@ -56,18 +75,20 @@ spec:
                 - /bin/sh
                 - -ce
                 - |
-                  LATEST=$(kubectl get imagepolicy wackorder-bot -o jsonpath='{.status.latestRef.name}:{.status.latestRef.tag}')
-                  if [ -z "$LATEST" ]; then
-                    echo "WARNING: no latestRef in ImagePolicy status"
+                  REVISION=$(kubectl get gitrepository wackorder -n flux-system -o jsonpath='{.status.artifact.revision}')
+                  if [ -z "$REVISION" ]; then
+                    echo "WARNING: no revision in GitRepository status"
                     exit 1
                   fi
+                  SHA=$(echo "$REVISION" | sed 's/.*sha1://')
+                  LATEST="ghcr.io/barthv/wackorder-bot:$SHA"
                   CURRENT=$(kubectl get deployment wackorder-bot -o jsonpath='{.spec.template.spec.containers[0].image}')
                   if [ "$CURRENT" = "$LATEST" ]; then
                     echo "Image already up to date: $CURRENT"
                     exit 0
                   fi
                   echo "Updating image: $CURRENT -> $LATEST"
-                  printf '{"apiVersion":"apps/v1","kind":"Deployment","metadata":{"name":"wackorder-bot"},"spec":{"template":{"spec":{"containers":[{"name":"wackorder-bot","image":"%s"}]}}}}' "$LATEST" \
+                  printf '{"apiVersion":"apps/v1","kind":"Deployment","metadata":{"name":"wackorder-bot"},"spec":{"template":{"metadata":{"annotations":{"deploy.flux.cd/revision":"%s"}},"spec":{"containers":[{"name":"wackorder-bot","image":"%s"}]}}}}' "$SHA" "$LATEST" \
                     | kubectl apply --server-side --force-conflicts --field-manager=image-updater -f -
               resources:
                 requests:

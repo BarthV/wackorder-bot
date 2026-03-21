@@ -3,33 +3,12 @@ kind: Kustomization
 
 resources:
   - ../../base
+  - image-updater.yaml
 
 images:
   - name: wackorder-bot
     newName: ghcr.io/barthv/wackorder-bot
-    newTag: latest
-
-patches:
-  - target:
-      kind: Deployment
-      name: wackorder-bot
-    patch: |
-      - op: add
-        path: /spec/template/spec/containers/0/imagePullPolicy
-        value: Always
-  - target:
-      kind: Deployment
-      name: wackorder-bot
-    patch: |
-      apiVersion: apps/v1
-      kind: Deployment
-      metadata:
-        name: wackorder-bot
-      spec:
-        template:
-          metadata:
-            annotations:
-              deploy.flux.cd/revision: "${FLUX_GIT_REVISION}"
+    newTag: set-by-image-updater
 
 configMapGenerator:
   - name: wackorder-bot
