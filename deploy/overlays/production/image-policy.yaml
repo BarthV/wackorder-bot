@@ -4,7 +4,7 @@ metadata:
   name: wackorder-bot
   namespace: flux-system
 spec:
-  interval: 5m
+  interval: 2m
   image: ghcr.io/barthv/wackorder-bot
 ---
 apiVersion: image.toolkit.fluxcd.io/v1beta2
@@ -15,6 +15,9 @@ metadata:
 spec:
   imageRepositoryRef:
     name: wackorder-bot
+  filterTags:
+    pattern: '^v(?P<version>[0-9]+\.[0-9]+\.[0-9]+.*)$'
+    extract: '$version'
   policy:
     semver:
       range: 0.x
