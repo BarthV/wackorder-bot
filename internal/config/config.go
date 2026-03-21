@@ -16,6 +16,7 @@ type Config struct {
 	LogChannelID   string
 	RecapChannelID string
 	AdminRoleIDs   []string
+	Debug          bool
 }
 
 // Load reads configuration from environment variables and returns a validated Config.
@@ -54,14 +55,22 @@ func Load() (*Config, error) {
 		}
 	}
 
+	debug := os.Getenv("DEBUG")
+	isDebug := debug == "1" || strings.EqualFold(debug, "true")
+
+	if isDebug {
+		logLevel = "debug"
+	}
+
 	return &Config{
-		DiscordToken: token,
-		CorpID:       corpID,
-		DBPath:       dbPath,
-		LogLevel:     logLevel,
-		LogFormat:    logFormat,
+		DiscordToken:   token,
+		CorpID:         corpID,
+		DBPath:         dbPath,
+		LogLevel:       logLevel,
+		LogFormat:      logFormat,
 		LogChannelID:   os.Getenv("LOG_CHANNEL_ID"),
 		RecapChannelID: os.Getenv("RECAP_CHANNEL_ID"),
 		AdminRoleIDs:   adminRoleIDs,
+		Debug:          isDebug,
 	}, nil
 }

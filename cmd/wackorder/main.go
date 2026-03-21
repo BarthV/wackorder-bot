@@ -36,7 +36,7 @@ func main() {
 
 	repo := store.New(database)
 
-	b, err := bot.New(cfg.DiscordToken, cfg.CorpID, cfg.LogChannelID, cfg.RecapChannelID, cfg.AdminRoleIDs, repo)
+	b, err := bot.New(cfg.DiscordToken, cfg.CorpID, cfg.LogChannelID, cfg.RecapChannelID, cfg.AdminRoleIDs, repo, cfg.Debug)
 	if err != nil {
 		slog.Error("failed to create bot", "err", err)
 		os.Exit(1)

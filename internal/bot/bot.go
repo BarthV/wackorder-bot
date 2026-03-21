@@ -16,18 +16,20 @@ type Bot struct {
 	logChannelID   string
 	recapChannelID string
 	adminRoleIDs   []string
-	store          store.Repository
-	registeredCmds []*discordgo.ApplicationCommand
-	bgCancel       context.CancelFunc
+	store    store.Repository
+	bgCancel context.CancelFunc
 }
 
 // New creates a Bot but does not open the connection yet.
-func New(token, corpID, logChannelID, recapChannelID string, adminRoleIDs []string, repo store.Repository) (*Bot, error) {
+func New(token, corpID, logChannelID, recapChannelID string, adminRoleIDs []string, repo store.Repository, debug bool) (*Bot, error) {
 	s, err := discordgo.New("Bot " + token)
 	if err != nil {
 		return nil, fmt.Errorf("create discord session: %w", err)
 	}
 	s.Identify.Intents = discordgo.IntentsNone
+	if debug {
+		s.LogLevel = discordgo.LogDebug
+	}
 	return &Bot{session: s, corpID: corpID, logChannelID: logChannelID, recapChannelID: recapChannelID, adminRoleIDs: adminRoleIDs, store: repo}, nil
 }
 
@@ -44,7 +46,6 @@ func (b *Bot) Start() error {
 	if err != nil {
 		return fmt.Errorf("register commands: %w", err)
 	}
-	b.registeredCmds = registered
 	for _, cmd := range registered {
 		slog.Info("command registered", "name", cmd.Name)
 	}
@@ -64,15 +65,11 @@ func (b *Bot) Start() error {
 	return nil
 }
 
-// Stop deregisters commands, stops the pruner, and closes the Discord session.
+// Stop stops background tasks and closes the Discord session.
+// Commands are not deregistered: BulkOverwrite on next Start() reconciles them.
 func (b *Bot) Stop() error {
 	if b.bgCancel != nil {
 		b.bgCancel()
-	}
-	for _, cmd := range b.registeredCmds {
-		if err := b.session.ApplicationCommandDelete(b.session.State.User.ID, b.corpID, cmd.ID); err != nil {
-			slog.Warn("failed to delete command", "name", cmd.Name, "err", err)
-		}
 	}
 	return b.session.Close()
 }
