@@ -4,7 +4,7 @@ metadata:
   name: infra-cd
   namespace: flux-system
 spec:
-  interval: 5m
+  interval: 1m
   url: https://github.com/BarthV/wackorder-bot.git
   ref:
     branch: main
