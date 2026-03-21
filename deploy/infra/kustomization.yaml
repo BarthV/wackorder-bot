@@ -4,4 +4,4 @@ kind: Kustomization
 resources:
   - infra-gitrepository.yaml
   - infra-kustomization.yaml
-  - ../../overlays/
+  - ../overlays/

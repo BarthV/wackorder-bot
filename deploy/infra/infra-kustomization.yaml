@@ -8,7 +8,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: wackorder-bot
-  path: ./deploy/overlays/infra
+  path: ./deploy/infra
   prune: false
   targetNamespace: wackorder-dev
   postBuild:
