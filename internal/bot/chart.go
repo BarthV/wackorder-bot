@@ -14,7 +14,7 @@ import (
 
 // Chart layout constants.
 const (
-	chartW    = 800
+	chartW    = 860
 	chartH    = 400
 	chartPadL = 80
 	chartPadR = 60

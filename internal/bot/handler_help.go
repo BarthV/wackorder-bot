@@ -11,7 +11,7 @@ func (h *handler) handleOrderHelp(s *discordgo.Session, i *discordgo.Interaction
 	workflow := "**1- Passer une commande (la quantité est en cSCU ou en Unités)**\n" +
 		"```/order (via une popup)\n/order component:Taranite quality:850 quantity:150\n/order component:Dolivine quantity:35\n```\n" +
 		"**2- Rechercher les commandes en cours**\n" +
-		"```/order-list (pour rechercher et filtrer les demandes en cours)\n/order-list component:Taranite older-than:1w (filtre par resource et par age)\n/order-list mode:self (pour filtrer ses propres commandes)\n```\n" +
+		"```/order-list (pour rechercher et filtrer les demandes en cours)\n/order-list component:Taranite older-than:1w (filtre par resource et par age)\n/order-list mode:self (pour filtrer ses propres commandes)\n/order-list mode:done (pour voir les commandes terminées)\n```\n" +
 		"**3- Marquer la commande comme prise en charge et collectée (minée, récoltée, ...)**\n" +
 		"```/order-update id:42 status:ready```\n" +
 		"**4- Terminer la commande (livraison)**\n" +

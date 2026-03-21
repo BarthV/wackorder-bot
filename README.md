@@ -39,6 +39,7 @@ All `/order-list` responses are ephemeral (visible only to you).
 | `/order-list mode:self` | Your own orders (all statuses) |
 | `/order-list mode:all` | Every order regardless of status |
 | `/order-list mode:booked` | Orders with status `ready` that you last updated |
+| `/order-list mode:done` | All completed orders (any creator) |
 | `/order-list component:<name>` | Filter by component name (case-insensitive substring, combinable with `mode`) |
 | `/order-list older-than:<d>` | Filter orders created before the given age (combinable with `mode` and `component`) |
 
@@ -81,6 +82,7 @@ All `/order-list` responses are ephemeral (visible only to you).
 | `LOG_LEVEL` | No | `info` | `debug` / `info` / `warn` / `error` |
 | `LOG_FORMAT` | No | `text` | `text` or `json` |
 | `LOG_CHANNEL_ID` | No | — | Discord channel ID for action audit logs; disabled if empty |
+| `RECAP_CHANNEL_ID` | No | — | Discord channel ID for daily recap; disabled if empty |
 | `ADMIN_ROLE_IDS` | No | — | Comma-separated Discord role IDs whose members can cancel any order |
 
 ## Run natively
@@ -125,4 +127,4 @@ internal/
   bot/                # Discord session, slash commands, interaction handlers, daily pruner
 ```
 
-The `store.Repository` interface decouples the bot from SQLite — swap in any backend by implementing the 11-method interface (`Create`, `GetByID`, `ListByCreator`, `ListPending`, `ListAll`, `SearchByComponent`, `ListSince`, `ListBefore`, `UpdateStatus`, `ListReadyByUpdater`, `Prune`).
+The `store.Repository` interface decouples the bot from SQLite — swap in any backend by implementing the 12-method interface (`Create`, `GetByID`, `ListByCreator`, `ListPending`, `ListAll`, `SearchByComponent`, `ListSince`, `ListBefore`, `UpdateStatus`, `ListReadyByUpdater`, `ListDone`, `Prune`).

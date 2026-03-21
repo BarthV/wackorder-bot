@@ -45,6 +45,9 @@ func (h *handler) handleOrders(s *discordgo.Session, i *discordgo.InteractionCre
 		}
 		orders, err = h.store.ListReadyByUpdater(context.Background(), caller)
 		baseTitle = "Les commandes que je gère"
+	case "done":
+		orders, err = h.store.ListDone(context.Background())
+		baseTitle = "Commandes terminées"
 	default: // "pending"
 		orders, err = h.store.ListPending(context.Background())
 		baseTitle = "Commandes en attente"

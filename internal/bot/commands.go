@@ -45,6 +45,7 @@ func commands() []*discordgo.ApplicationCommand {
 						{Name: "pending — commandes en attente (commandées / prêtes)", Value: "pending"},
 						{Name: "all — toutes les commandes", Value: "all"},
 						{Name: "booked — toutes les commande que j'ai passée en 'prêt'", Value: "booked"},
+					{Name: "done — commandes terminées", Value: "done"},
 					},
 				},
 				{
