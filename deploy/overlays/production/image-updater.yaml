@@ -49,7 +49,7 @@ spec:
             runAsGroup: 65534
           containers:
             - name: kubectl
-              image: bitnami/kubectl:1.35.3
+              image: dhi.io/kubectl:1.35-dev
               command:
                 - /bin/sh
                 - -ce
