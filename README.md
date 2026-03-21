@@ -70,7 +70,7 @@ All `/order-list` responses are ephemeral (visible only to you).
 
 ## Automatic cleanup
 
-`done` orders are automatically deleted after **14 days**. The pruner runs at startup and then daily at midnight UTC.
+`done` orders are automatically deleted after **31 days**. The pruner runs at startup and then daily at midnight UTC.
 
 ## Environment variables
 
