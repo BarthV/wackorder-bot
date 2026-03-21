@@ -1,0 +1,10 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: infra
+  namespace: flux-system
+spec:
+  interval: 5m
+  url: https://github.com/BarthV/wackorder-bot.git
+  ref:
+    branch: main
