@@ -16,7 +16,7 @@ jobs:
       KEEP: 6 # keep the N last non-server / non-latest OCI images
     steps:
       - name: Prune old non-semver tags
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const owner = context.repo.owner;
