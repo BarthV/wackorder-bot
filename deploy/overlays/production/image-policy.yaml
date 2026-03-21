@@ -1,0 +1,20 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: wackorder-bot
+  namespace: flux-system
+spec:
+  interval: 5m
+  image: ghcr.io/barthv/wackorder-bot
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: wackorder-bot
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: wackorder-bot
+  policy:
+    semver:
+      range: 0.x

@@ -64,7 +64,7 @@ jobs:
 
       - name: Retag Docker image with semver
         run: |
-          IMAGE="ghcr.io/${{ github.repository }}"
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
           docker buildx imagetools create \
             --tag "${IMAGE}:${{ inputs.version }}" \
             "${IMAGE}:latest"

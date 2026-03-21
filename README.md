@@ -108,6 +108,16 @@ The SQLite database is stored at `/data/wackorder.db` in the container (set via 
 
 The runtime image is `gcr.io/distroless/static-debian12:nonroot` — no shell, no package manager.
 
+## Run in Kubernetes
+
+```bash
+# prepare fluxcd infra
+flux install --kubeconfig /etc/rancher/k3s/k3s.yaml --components="source-controller,kustomize-controller" --components-extra "image-reflector-controller"
+
+# bootstrap infra core (currently deployying both dev & prod on the same infra)
+kustomize build deploy/infra | kubectl apply --server-side -f -
+```
+
 ## Development
 
 ```bash

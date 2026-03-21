@@ -3,20 +3,12 @@ kind: Kustomization
 
 resources:
   - ../../base
+  - image-policy.yaml
 
 images:
   - name: wackorder-bot
-    newName: ghcr.io/barthv/wackorder-bot
-    newTag: latest
-
-patches:
-  - target:
-      kind: Deployment
-      name: wackorder-bot
-    patch: |
-      - op: add
-        path: /spec/template/spec/containers/0/imagePullPolicy
-        value: Always
+    newName: ghcr.io/barthv/wackorder-bot # {"$imagepolicy": "flux-system:wackorder-bot:name"}
+    newTag: v0.0.0 # {"$imagepolicy": "flux-system:wackorder-bot:tag"}
 
 configMapGenerator:
   - name: wackorder-bot
