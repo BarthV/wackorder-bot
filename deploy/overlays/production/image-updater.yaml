@@ -47,22 +47,9 @@ spec:
             runAsNonRoot: true
             runAsUser: 65534
             runAsGroup: 65534
-          initContainers:
-            - name: kubectl-bin
-              image: registry.k8s.io/kubectl:v1.35.3
-              imagePullPolicy: IfNotPresent
-              command: ["cp", "/bin/kubectl", "/tools/kubectl"]
-              volumeMounts:
-                - name: tools
-                  mountPath: /tools
-              securityContext:
-                allowPrivilegeEscalation: false
-                capabilities:
-                  drop:
-                    - ALL
           containers:
             - name: updater
-              image: debian:bookworm-slim
+              image: alpine/k8s:1.35.2
               imagePullPolicy: IfNotPresent
               command:
                 - /bin/sh
@@ -95,6 +82,3 @@ spec:
                 capabilities:
                   drop:
                     - ALL
-          volumes:
-            - name: tools
-              emptyDir: {}
