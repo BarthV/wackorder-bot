@@ -7,7 +7,7 @@ spec:
   interval: 5m
   sourceRef:
     kind: GitRepository
-    name: wackorder-bot
+    name: infra-cd
   path: ./deploy/infra
   prune: false
   postBuild:

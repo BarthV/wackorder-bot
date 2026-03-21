@@ -1,7 +1,7 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
-  name: wackorder-bot
+  name: wackorder
   namespace: flux-system
 spec:
   interval: 5m
