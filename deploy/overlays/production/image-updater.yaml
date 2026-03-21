@@ -39,6 +39,7 @@ spec:
   jobTemplate:
     spec:
       activeDeadlineSeconds: 60
+      backoffLimit: 0
       template:
         spec:
           serviceAccountName: image-updater
