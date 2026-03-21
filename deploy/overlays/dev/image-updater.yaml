@@ -44,7 +44,7 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: image-updater-dev
-    namespace: wackorder
+    namespace: wackorder-dev
 ---
 apiVersion: batch/v1
 kind: CronJob
