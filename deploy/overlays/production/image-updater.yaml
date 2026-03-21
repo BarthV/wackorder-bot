@@ -55,9 +55,9 @@ spec:
                 - /bin/sh
                 - -ce
                 - |
-                  LATEST=$(kubectl get imagepolicy wackorder-bot -o jsonpath='{.status.latestImage}')
+                  LATEST=$(kubectl get imagepolicy wackorder-bot -o jsonpath='{.status.latestRef.name}:{.status.latestRef.tag}')
                   if [ -z "$LATEST" ]; then
-                    echo "WARNING: no latestImage in ImagePolicy status"
+                    echo "WARNING: no latestRef in ImagePolicy status"
                     exit 0
                   fi
                   CURRENT=$(kubectl get deployment wackorder-bot -o jsonpath='{.spec.template.spec.containers[0].image}')
