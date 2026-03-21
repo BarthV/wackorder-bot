@@ -1,0 +1,79 @@
+name: Cleanup GHCR
+
+on:
+  schedule:
+    - cron: "0 3 * * 0" # Every Sunday at 03:00 UTC
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    name: Prune non-semver images
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    env:
+      PACKAGE: wackorder-bot
+      KEEP: 6 # keep the N last non-server / non-latest OCI images
+    steps:
+      - name: Prune old non-semver tags
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const pkg = process.env.PACKAGE;
+            const keep = parseInt(process.env.KEEP, 10);
+
+            // Semver pattern: vX.Y.Z with optional pre-release
+            const semverRe = /^v\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$/;
+            const protectedTags = new Set(["latest"]);
+
+            // Fetch all versions (paginated)
+            let versions = [];
+            for (let page = 1; ; page++) {
+              const batch = await github.rest.packages.getAllPackageVersionsForPackageOwnedByUser({
+                package_type: "container",
+                package_name: pkg,
+                username: owner,
+                per_page: 100,
+                page,
+              });
+              versions.push(...batch.data);
+              if (batch.data.length < 100) break;
+            }
+
+            // Classify versions
+            const deletable = [];
+            for (const v of versions) {
+              const tags = v.metadata?.container?.tags ?? [];
+              // Skip untagged manifests (multi-arch children etc.)
+              if (tags.length === 0) continue;
+              // Skip if any tag is semver or protected
+              if (tags.some(t => semverRe.test(t) || protectedTags.has(t))) {
+                console.log(`keep (protected): ${tags.join(", ")}`);
+                continue;
+              }
+              deletable.push({ id: v.id, tags, created: v.created_at });
+            }
+
+            // Sort by creation date descending (most recent first)
+            deletable.sort((a, b) => new Date(b.created) - new Date(a.created));
+
+            // Keep the N most recent, delete the rest
+            const toKeep = deletable.slice(0, keep);
+            const toDelete = deletable.slice(keep);
+
+            for (const v of toKeep) {
+              console.log(`keep (recent): ${v.tags.join(", ")} (${v.created})`);
+            }
+
+            for (const v of toDelete) {
+              console.log(`delete: ${v.tags.join(", ")} (${v.created})`);
+              await github.rest.packages.deletePackageVersionForUser({
+                package_type: "container",
+                package_name: pkg,
+                username: owner,
+                package_version_id: v.id,
+              });
+            }
+
+            console.log(`Done: kept ${toKeep.length}, deleted ${toDelete.length} versions`);
