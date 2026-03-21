@@ -113,9 +113,8 @@ func orderListEmbeds(orders []model.Order, title string) []*discordgo.MessageEmb
 	if len(orders) == 0 {
 		return []*discordgo.MessageEmbed{
 			{
-				Title:       title,
-				Description: "_Aucune commande trouvée._",
-				Color:       colorDone,
+				Description: "✅ Aucune commande trouvée.",
+				Color:       colorReady,
 			},
 		}
 	}
@@ -202,7 +201,7 @@ func okEmbed(msg string) *discordgo.InteractionResponseData {
 // orderListPlain builds a plain-text message (no embed) for a list of orders.
 func orderListPlain(orders []model.Order, title string) string {
 	if len(orders) == 0 {
-		return fmt.Sprintf("**%s**\n_Aucune commande trouvée._", title)
+		return "✅ Aucune commande trouvée."
 	}
 
 	var sb strings.Builder
