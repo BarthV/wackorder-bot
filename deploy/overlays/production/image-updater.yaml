@@ -68,9 +68,6 @@ spec:
                   echo "Updating image: $CURRENT -> $LATEST"
                   printf '{"apiVersion":"apps/v1","kind":"Deployment","metadata":{"name":"wackorder-bot"},"spec":{"template":{"spec":{"containers":[{"name":"wackorder-bot","image":"%s"}]}}}}' "$LATEST" \
                     | /tools/kubectl apply --server-side --force-conflicts --field-manager=image-updater -f -
-              volumeMounts:
-                - name: tools
-                  mountPath: /tools
               resources:
                 requests:
                   cpu: 10m
