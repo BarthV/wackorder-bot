@@ -2,6 +2,6 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - infra-gitrepository.yaml
-  - infra-kustomization.yaml
-  - ../overlays/
+  - infra-cd-gitrepository.yaml
+  - infra-cd-kustomization.yaml
+  - apps-root-kustomization.yaml

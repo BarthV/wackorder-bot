@@ -1,7 +1,7 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: root-cd
+  name: infra-cd
   namespace: flux-system
 spec:
   interval: 5m
@@ -10,6 +10,5 @@ spec:
     name: wackorder-bot
   path: ./deploy/infra
   prune: false
-  targetNamespace: wackorder-dev
   postBuild:
     substitute: {}

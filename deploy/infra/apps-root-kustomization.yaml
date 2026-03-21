@@ -1,15 +1,14 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: wackorder-bot-dev
+  name: infra-apps-root
   namespace: flux-system
 spec:
   interval: 5m
   sourceRef:
     kind: GitRepository
     name: wackorder-bot
-  path: ./deploy/overlays/dev
-  prune: true
-  targetNamespace: wackorder-dev
+  path: ./deploy/overlays
+  prune: false
   postBuild:
     substitute: {}
