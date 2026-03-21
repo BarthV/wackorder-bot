@@ -9,7 +9,7 @@ resources:
 images:
   - name: wackorder-bot
     newName: ghcr.io/barthv/wackorder-bot
-    newTag: ${WACKORDER_BOT_IMAGE_TAG}
+    newTag: ${WACKORDER_BOT_IMAGE_TAG:-latest}
 
 configMapGenerator:
   - name: wackorder-bot
