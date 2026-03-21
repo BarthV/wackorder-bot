@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/barthv/wackorder-bot/internal/store"
+	"github.com/bwmarrin/discordgo"
 )
 
 // Bot manages the Discord session and command lifecycle.
@@ -54,7 +54,13 @@ func (b *Bot) Start() error {
 	go b.startPruner(ctx)
 	go b.startRecap(ctx)
 
-	slog.Info("wackorder bot is running", "corp_id", b.corpID)
+	guildName := b.corpID
+	if guild, err := b.session.Guild(b.corpID); err == nil && guild.Name != "" {
+		guildName = guild.Name
+	} else {
+		guildName = "-"
+	}
+	slog.Info("wackorder bot is running", "corp", fmt.Sprintf("%s (%s)", guildName, b.corpID))
 	return nil
 }
 
