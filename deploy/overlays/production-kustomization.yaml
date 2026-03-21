@@ -11,3 +11,5 @@ spec:
   path: ./deploy/overlays/production
   prune: true
   targetNamespace: wackorder
+  postBuild:
+    substitute: {}

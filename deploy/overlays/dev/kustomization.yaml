@@ -1,0 +1,43 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+  - flux-kustomization.yaml
+  - gitrepository.yaml
+
+images:
+  - name: wackorder-bot
+    newName: ghcr.io/barthv/wackorder-bot
+    newTag: latest
+
+patches:
+  - target:
+      kind: Deployment
+      name: wackorder-bot
+    patch: |
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+  - target:
+      kind: Deployment
+      name: wackorder-bot
+    patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: wackorder-bot
+      spec:
+        template:
+          metadata:
+            annotations:
+              deploy.flux.cd/revision: "${FLUX_GIT_REVISION}"
+
+configMapGenerator:
+  - name: wackorder-bot
+    behavior: merge
+    literals:
+      - LOG_LEVEL=info
+      - LOG_CHANNEL_ID=1484832149205942352
+      - ADMIN_ROLE_IDS=1483588423749996564
+      - CORP_ID=1482661212977234113
