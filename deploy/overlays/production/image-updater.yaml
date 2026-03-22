@@ -91,7 +91,7 @@ spec:
                   fi
                   echo "Updating image tag: $CURRENT -> $LATEST_TAG"
                   printf '{"apiVersion":"v1","kind":"ConfigMap","metadata":{"name":"wackorder-image-vars","namespace":"flux-system","labels":{"reconcile.fluxcd.io/watch":"Enabled"}},"data":{"WACKORDER_BOT_IMAGE_TAG":"%s"}}' "$LATEST_TAG" \
-                    | kubectl apply --force-conflict --server-side -f -
+                    | kubectl apply --force-conflicts --server-side -f -
               resources:
                 requests:
                   cpu: 10m
