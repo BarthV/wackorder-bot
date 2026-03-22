@@ -13,11 +13,9 @@ func (h *handler) handleOrderHelp(s *discordgo.Session, i *discordgo.Interaction
 		"**2- Rechercher les commandes en cours**\n" +
 		"```/order-list (rechercher et filtrer les demandes en cours)\n/order-list component:Taranite older-than:1w (filtre par resource et age)\n/order-list mode:self (pour filtrer ses commandes)\n/order-list mode:done (commandes terminées)\n```\n" +
 		"**3- Marquer la commande comme OK / collectée (minée, récoltée, ...)**\n" +
-		"```/order-update id:42 status:ready```\n" +
+		"```/order-update id:42 status:ready\n```\n" +
 		"**4- Terminer la commande (livraison)**\n" +
-		"```/order-update id:42 status:done (commande unique)\n/order-update booked:done (toutes celles que j'ai passées 'ready')```\n" +
-		"**Voir le détail d'une commande**\n" +
-		"```/```\n" +
+		"```/order-update id:42 status:done (commande unique)\n/order-update booked:done (toutes celles que j'ai passées 'ready')\n```\n" +
 		"**Annuler une de ses propres commandes**\n" +
 		"```/order-cancel id:42```\n" +
 		"**Afficher les statistiques globales des commandes en cours**\n" +
