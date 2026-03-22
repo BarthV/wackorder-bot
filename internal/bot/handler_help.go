@@ -20,7 +20,7 @@ func (h *handler) handleOrderHelp(s *discordgo.Session, i *discordgo.Interaction
 		"```/order-cancel id:42```\n" +
 		"**Afficher les statistiques globales des commandes en cours**\n" +
 		"```/order-stats\n/order-detail id:42 (commande unique)\n```\n" +
-		"**Attention:** les commandes terminées sont automatiquement supprimées après 31 jours."
+		"**Attention:** les commandes `done` sont automatiquement supprimées après 31 jours."
 
 	var sb strings.Builder
 	for i, r := range resources {
