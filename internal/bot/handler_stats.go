@@ -149,7 +149,10 @@ func (h *handler) handleStatsFilter(s *discordgo.Session, i *discordgo.Interacti
 	}
 
 	title := fmt.Sprintf("Commandes en attente — %s", component)
-	respondEmbeds(s, i, orderListEmbeds(pending, title), discordgo.MessageFlagsEphemeral)
+	respond(s, i, &discordgo.InteractionResponseData{
+		Content: orderListPlain(pending, title),
+		Flags:   discordgo.MessageFlagsEphemeral,
+	})
 }
 
 // buildHistogram returns an ASCII histogram with y-axis labels and x-axis graduation.
