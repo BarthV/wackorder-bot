@@ -11,16 +11,18 @@ func (h *handler) handleOrderHelp(s *discordgo.Session, i *discordgo.Interaction
 	workflow := "**1- Passer une commande (la quantité est en cSCU ou en Unités)**\n" +
 		"```/order (via une popup)\n/order component:Taranite quality:850 quantity:150\n/order component:Dolivine quantity:35\n```\n" +
 		"**2- Rechercher les commandes en cours**\n" +
-		"```/order-list (pour rechercher et filtrer les demandes en cours)\n/order-list component:Taranite older-than:1w (filtre par resource et par age)\n/order-list mode:self (pour filtrer ses propres commandes)\n/order-list mode:done (pour voir les commandes terminées)\n```\n" +
-		"**3- Marquer la commande comme prise en charge et collectée (minée, récoltée, ...)**\n" +
+		"```/order-list (rechercher et filtrer les demandes en cours)\n/order-list component:Taranite older-than:1w (filtre par resource et age)\n/order-list mode:self (pour filtrer ses commandes)\n/order-list mode:done (commandes terminées)\n```\n" +
+		"**3- Marquer la commande comme OK / collectée (minée, récoltée, ...)**\n" +
 		"```/order-update id:42 status:ready```\n" +
 		"**4- Terminer la commande (livraison)**\n" +
-		"```/order-update id:42 status:done (commande unique)\n/order-update booked:done (toutes les commandes que j'ai passées 'ready')```\n" +
+		"```/order-update id:42 status:done (commande unique)\n/order-update booked:done (toutes celles que j'ai passées 'ready')```\n" +
+		"**Voir le détail d'une commande**\n" +
+		"```/```\n" +
 		"**Annuler une de ses propres commandes**\n" +
 		"```/order-cancel id:42```\n" +
 		"**Afficher les statistiques globales des commandes en cours**\n" +
-		"```/order-stats```\n\n" +
-		"**Attention:** les commandes terminées sont automatiquement supprimées après 15 jours."
+		"```/order-stats\n/order-detail id:42 (commande unique)\n```\n" +
+		"**Attention:** les commandes terminées sont automatiquement supprimées après 31 jours."
 
 	var sb strings.Builder
 	for i, r := range resources {
@@ -32,12 +34,12 @@ func (h *handler) handleOrderHelp(s *discordgo.Session, i *discordgo.Interaction
 
 	embeds := []*discordgo.MessageEmbed{
 		{
-			Title:       "📖 G.A.L.E.R.E — Aide à la prise de commande",
+			Title:       "📖 G.A.L.E.R.E — gestion des commandes",
 			Color:       colorOrdered,
 			Description: workflow,
 		},
 		{
-			Title:       "📦 Ressources supportées",
+			Title:       "📦 Liste des ressources (case-insensitive)",
 			Color:       colorReady,
 			Description: sb.String(),
 		},
